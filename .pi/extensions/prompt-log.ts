@@ -2,15 +2,22 @@
  * Appends every prompt typed into pi to PROMPTS.md at the project root,
  * so the AI usage log can be shipped with the task submission.
  *
+ * Project-only: it lives in this repo's .pi/extensions (not ~/.pi/agent), so pi
+ * loads it only when started in this project, and the log path is resolved from
+ * this file's location rather than pi's working directory.
+ *
  * Prompts injected by other extensions (source "extension") are skipped;
  * only what a human typed (interactive or RPC) is recorded.
  */
 
 import { appendFile, access } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const LOG_FILE = "PROMPTS.md";
+// <project>/.pi/extensions/prompt-log.ts -> <project>/PROMPTS.md
+const LOG_PATH = join(dirname(fileURLToPath(import.meta.url)), "..", "..", LOG_FILE);
 const HEADER = "# Prompt Log\n\nEvery prompt sent to the AI coding agent while building this project, in order.\n";
 
 // Fence longer than any backtick run inside the prompt so code blocks in it can't close ours.
@@ -29,7 +36,7 @@ export default function (pi: ExtensionAPI) {
 		const text = event.text.trim();
 		if (event.source === "extension" || !text) return { action: "continue" };
 
-		const file = join(ctx.cwd, LOG_FILE);
+		const file = LOG_PATH;
 		const exists = await access(file).then(() => true, () => false);
 		const marker = fence(text);
 		const entry = `\n## ${timestamp(new Date())}\n\n${marker}text\n${text}\n${marker}\n`;
