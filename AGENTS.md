@@ -5,7 +5,7 @@ It uses the following technologies:
 1. Vue/TypeScript for the frontend.
 2. Uses oxlint for linting. (Let's use the eslint-plugin-vue rules)
 3. Uses Java Latest LTS for the transformation processor as a Library API.
-4. BE to be decided
+4. Spring Boot for the web API, calling the Java transformation library in-process.
 
 Rules:
 
