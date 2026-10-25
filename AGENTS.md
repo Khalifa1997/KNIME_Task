@@ -3,7 +3,7 @@ This is a project for a no-code platform that allows users to generate text tran
 It uses the following technologies:
 
 1. Vue/TypeScript for the frontend.
-2. Uses oxlint for linting. (Let's use the eslint-plugin-vue rules)
+2. Uses ESLint for linting, with the official Vue plugin (eslint-plugin-vue) and the accessibility rules (eslint-plugin-vuejs-accessibility).
 3. Uses Java Latest LTS for the transformation processor as a Library API.
 4. Spring Boot for the web API, calling the Java transformation library in-process.
 
