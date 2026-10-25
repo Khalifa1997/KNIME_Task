@@ -35,3 +35,7 @@ _Avoid_: Result (when meaning the final text)
 **Step error**:
 A problem with one Step's Field values that stops the Chain from running, reported against that Step.
 _Avoid_: Validation failure, node error
+
+**Input error**:
+A problem with the Input text, or with the Chain as a whole, that stops the Chain from running, reported against no Step.
+_Avoid_: Step error (when no single Step is at fault)
