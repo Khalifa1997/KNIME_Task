@@ -1,0 +1,39 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Node / Vue / Vite
+node_modules/
+dist/
+dist-ssr/
+coverage/
+*.local
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Java (Maven / Gradle)
+target/
+build/
+!**/src/**/build/
+.gradle/
+out/
+*.class
+*.log
+hs_err_pid*
+.mvn/wrapper/maven-wrapper.jar
+!gradle/wrapper/gradle-wrapper.jar
