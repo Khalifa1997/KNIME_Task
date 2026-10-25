@@ -12,6 +12,10 @@ _Avoid_: Operation, node type
 A configurable setting a Transformation declares, such as Replace's search text.
 _Avoid_: Parameter, argument, option
 
+**Choice**:
+One of the fixed values a select Field allows, such as a comma for a delimiter Field.
+_Avoid_: Option, enum value
+
 **Step**:
 One use of a Transformation in a Chain, holding its own Field values.
 _Avoid_: Node, operation, block

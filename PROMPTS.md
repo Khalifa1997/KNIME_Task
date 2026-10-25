@@ -269,3 +269,50 @@ Task: You are resolving a wayfinder research ticket. First read and follow the s
 ```text
 Okay I want the main work to be on the main branch. The research branch should only have the docs really. I don't need anything else. As for linting let's use ESLint completely with the official plugin for Vue, while also retaining the accessibility rules that we have.
 ```
+
+## 2026-10-25 23:42:11
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/1
+```
+
+## 2026-10-25 23:50:43
+
+```text
+1. Yes to all.
+2. Yes.
+3. Yes.
+4. Actually end doesn't need to be required.
+5. yes clamp
+Question 6: Yes. Question 7: Yes. Let's use a JavaScript regex way of doing things. 
+Yes a limit is almost, actually. Question 10, yes. Actually I want another field type: select, which would have options as well. This would be handy when I want to implement, in the future, a delimiter, for example. I would like to have options given by the backend and shown on the frontend as a dropdown menu. Q12:yes
+```
+
+## 2026-10-25 23:53:35
+
+```text
+13. Yes.
+14. A only.
+15. Regex time limit: let's bump it up to 2 seconds.
+16. Yes.
+17. Yes.
+18. Sure.
+```
+
+## 2026-10-25 23:56:18
+
+```text
+The way of doing regex should match 100% how JavaScript deals with regex. Can you confirm this, because you're saying \`pattern\` uses Java syntax?
+```
+
+## 2026-10-25 23:57:42
+
+```text
+Okay scratch the regex javascript thing, let's go for your approach but can you first give me a few examples..
+```
+
+## 2026-10-25 23:59:20
+
+```text
+Yes, looks good to me. Thank you.
+```
