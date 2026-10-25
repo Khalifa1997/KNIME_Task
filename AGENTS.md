@@ -11,3 +11,4 @@ Rules:
 
 1. Everything produced on the frontend **MUST** be accessible and responsive.
 2. All Vue components **MUST** be written in Composition API and use Typescript
+3. **Never** commit on your own
