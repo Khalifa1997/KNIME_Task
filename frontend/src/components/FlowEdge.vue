@@ -88,6 +88,8 @@ const fillDelay = computed(() => `${motion.value.index * FILL_MS}ms`)
 
 .flow-edge__flash--danger {
   stroke: var(--danger-border);
+  /* A failure stays marked until the next run, so it holds instead of fading. */
+  animation: none;
 }
 
 @keyframes flow {
