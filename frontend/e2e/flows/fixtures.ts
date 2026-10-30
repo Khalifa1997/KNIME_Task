@@ -7,6 +7,7 @@ type DomainRejectionAssertion = (response: Response, expectedBody: unknown) => P
 export const test = base.extend<{
   consoleErrors: string[]
   expectDomainRejection: DomainRejectionAssertion
+  expectHttpFailure: (response: Response, status: 400 | 500, expectedBody: unknown) => Promise<void>
 }>({
   consoleErrors: [
     async ({ page }, use) => {
@@ -22,6 +23,51 @@ export const test = base.extend<{
     },
     { auto: true },
   ],
+  expectHttpFailure: async ({ consoleErrors }, use) => {
+    const expected: { url: string; status: number }[] = []
+    await use(async (response, status, expectedBody) => {
+      expect(response.request().method()).toBe('POST')
+      expect(new URL(response.url()).pathname).toBe('/api/chain/run')
+      expect(response.status()).toBe(status)
+      expect(response.headers()['content-type']).toContain('application/problem+json')
+      expect(await response.json()).toEqual(expectedBody)
+      expected.push({ url: response.url(), status })
+    })
+    for (const { url, status } of expected) {
+      const index = consoleErrors.findIndex(entry => {
+        try {
+          const message = JSON.parse(entry) as { text: string; url: string }
+          return message.url === url && new RegExp('^Failed to load resource: the server responded with a status of ' + status + ' ([^)]*) ({ consoleErrors }, use) => {
+    const expectedUrls: string[] = []
+    await use(async (response, expectedBody) => {
+      expect(response.request().method()).toBe('POST')
+      expect(new URL(response.url()).pathname).toBe('/api/chain/run')
+      expect(response.status()).toBe(422)
+      expect(response.headers()['content-type']).toContain('application/problem+json')
+      expect(await response.json()).toEqual(expectedBody)
+      expectedUrls.push(response.url())
+    })
+    for (const url of expectedUrls) {
+      const index = consoleErrors.findIndex((entry) => {
+        try {
+          const message = JSON.parse(entry) as { text: string; url: string }
+          return message.url === url && /^Failed to load resource: the server responded with a status of 422 \([^)]*\)$/.test(message.text)
+        } catch {
+          return false
+        }
+      })
+      if (index !== -1) consoleErrors.splice(index, 1)
+    }
+  },
+})
+
+export { expect }
+).test(message.text)
+        } catch { return false }
+      })
+      if (index !== -1) consoleErrors.splice(index, 1)
+    }
+  },
   expectDomainRejection: async ({ consoleErrors }, use) => {
     const expectedUrls: string[] = []
     await use(async (response, expectedBody) => {
