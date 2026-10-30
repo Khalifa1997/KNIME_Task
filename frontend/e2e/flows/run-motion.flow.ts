@@ -24,10 +24,9 @@ test('flashes red up to the edge entering the first failing Step', async ({ page
   await expect(page.locator('.node--invalid')).toHaveCount(1)
   await expect(page.locator('.flow-edge__flash--danger')).toHaveCount(2)
   await expect(page.locator('.flow-edge__flash--success')).toHaveCount(0)
-  // The red edges hold: no fade animation, still fully opaque.
+  // The red edges keep pulsing until the next run, so the animation never ends.
   for (const edge of await page.locator('.flow-edge__flash--danger').all()) {
-    await expect(edge).toHaveCSS('animation-name', 'none')
-    await expect(edge).toHaveCSS('opacity', '1')
+    await expect(edge).toHaveCSS('animation-iteration-count', 'infinite')
   }
   await page.screenshot({ path: testInfo.outputPath('01-red-flash.png') })
 })
