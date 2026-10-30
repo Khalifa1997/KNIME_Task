@@ -6,7 +6,7 @@ test('flashes red up to the edge entering the first failing Step', async ({ page
   await page.getByRole('textbox', { name: 'Input text' }).fill('Hello World')
   const palette = page.getByRole('region', { name: 'Add Step' })
   for (const label of ['Uppercase', 'Replace', 'Lowercase']) {
-    await palette.getByRole('button', { name: label }).click()
+    await palette.getByRole('button', { name: label, exact: true }).click()
   }
   await expect(page.locator('.flow-edge__flash')).toHaveCount(0)
 
@@ -24,5 +24,10 @@ test('flashes red up to the edge entering the first failing Step', async ({ page
   await expect(page.locator('.node--invalid')).toHaveCount(1)
   await expect(page.locator('.flow-edge__flash--danger')).toHaveCount(2)
   await expect(page.locator('.flow-edge__flash--success')).toHaveCount(0)
+  // The red edges hold: no fade animation, still fully opaque.
+  for (const edge of await page.locator('.flow-edge__flash--danger').all()) {
+    await expect(edge).toHaveCSS('animation-name', 'none')
+    await expect(edge).toHaveCSS('opacity', '1')
+  }
   await page.screenshot({ path: testInfo.outputPath('01-red-flash.png') })
 })
