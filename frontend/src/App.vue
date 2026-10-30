@@ -9,6 +9,33 @@ import { INPUT_ID, PHONE_QUERY, slot, type FocusRequest, type Layout } from './l
 import { createRunState, executeRun, requestOf, runStatus, type Chain } from './run'
 
 const metadata = ref<Metadata | null>(null)
+const phase = ref<'loading' | 'metadata-error' | 'ready'>('loading')
+const metadataReason = ref('')
+const hasSavedSession = ref(false)
+const readyMetadata = computed(() => phase.value === 'ready' ? metadata.value : null)
+let metadataLoading = false
+
+async function loadMetadata() {
+  if (metadataLoading) return
+  metadataLoading = true
+  phase.value = 'loading'
+  metadataReason.value = ''
+  try {
+    // Presence only; saving and restoring belong to later stages.
+    hasSavedSession.value = sessionStorage.getItem('text-transformer.session') !== null
+  } catch {
+    hasSavedSession.value = false
+  }
+  try {
+    metadata.value = await fetchMetadata()
+    phase.value = 'ready'
+  } catch (error) {
+    metadataReason.value = error instanceof Error ? error.message : 'Something went wrong.'
+    phase.value = 'metadata-error'
+  } finally {
+    metadataLoading = false
+  }
+}
 const chain = reactive<Chain>({ inputText: '', steps: [] })
 const isPhone = useMediaQuery(PHONE_QUERY)
 const layout = reactive<Layout>({
@@ -26,14 +53,7 @@ function focusNode(id: string, nodeOnly = false) {
   })
 }
 
-onMounted(async () => {
-  try {
-    metadata.value = await fetchMetadata()
-  } catch (error) {
-    // The loading and error screen comes with the metadata gate.
-    console.error(error)
-  }
-})
+onMounted(loadMetadata)
 
 // Crossing the breakpoint keeps the Chain but lays it out afresh for the new mode.
 watch(isPhone, (phone) => {
@@ -43,7 +63,7 @@ watch(isPhone, (phone) => {
 })
 
 const canAddStep = computed(
-  () => metadata.value !== null && chain.steps.length < metadata.value.limits.maxSteps,
+  () => readyMetadata.value !== null && chain.steps.length < readyMetadata.value.limits.maxSteps,
 )
 
 function addStep(transformationId: string) {
@@ -112,6 +132,7 @@ const statusState = computed(() => {
 })
 
 function startRun() {
+  if (phase.value !== 'ready') return
   void executeRun(run, chain, postRun)
 }
 
@@ -135,7 +156,7 @@ onKeyStroke('Enter', (event) => {
         Text Transformer
       </h1>
       <section
-        v-if="metadata"
+        v-if="readyMetadata"
         class="palette"
         aria-labelledby="palette-label"
       >
@@ -147,7 +168,7 @@ onKeyStroke('Enter', (event) => {
         </h2>
         <ul class="palette__list">
           <li
-            v-for="transformation in metadata.transformations"
+            v-for="transformation in readyMetadata.transformations"
             :key="transformation.id"
           >
             <button
@@ -167,7 +188,7 @@ onKeyStroke('Enter', (event) => {
         </ul>
       </section>
       <div
-        v-if="metadata"
+        v-if="readyMetadata"
         class="run-bar"
       >
         <p
@@ -200,13 +221,43 @@ onKeyStroke('Enter', (event) => {
       {{ announcement }}
     </div>
     <main class="workspace">
+      <p
+        v-if="phase === 'loading'"
+        class="metadata-loading"
+        role="status"
+      >
+        Loading Transformations…
+      </p>
+      <section
+        v-else-if="phase === 'metadata-error'"
+        class="metadata-error"
+        role="alert"
+        aria-labelledby="metadata-error-title"
+      >
+        <h2 id="metadata-error-title">
+          Couldn't load Transformations
+        </h2>
+        <p>{{ metadataReason }}</p>
+        <p v-if="hasSavedSession">
+          Your saved work is kept and will come back once this loads.
+        </p>
+        <button
+          type="button"
+          class="btn btn--primary"
+          @click="loadMetadata"
+        >
+          Retry
+        </button>
+      </section>
       <ChainCanvas
         v-if="metadata"
         :focus-request="focusRequest"
+        v-if="readyMetadata"
+        ref="canvas"
         :chain="chain"
         :layout="layout"
-        :transformations="metadata.transformations"
-        :max-input-length="metadata.limits.maxInputLength"
+        :transformations="readyMetadata.transformations"
+        :max-input-length="readyMetadata.limits.maxInputLength"
         :run="run"
         :dimmed="status.dimmed"
         @delete-step="deleteStep"
@@ -286,6 +337,31 @@ onKeyStroke('Enter', (event) => {
 .workspace {
   display: grid;
   min-height: 0;
+}
+
+.metadata-loading {
+  place-self: center;
+  margin: 1rem;
+}
+
+.metadata-error {
+  place-self: center;
+  width: min(30rem, calc(100% - 2rem));
+  padding: 1.5rem;
+  background: var(--card);
+  color: var(--text);
+  border-radius: 0.5rem;
+}
+
+.metadata-error h2 {
+  font-size: var(--text-lg);
+  text-box: trim-both cap alphabetic;
+}
+
+.metadata-error p {
+  margin: 1rem 0;
+  font-size: var(--text-md);
+  text-box: trim-both cap alphabetic;
 }
 
 @media (max-width: 799px) {
