@@ -992,3 +992,33 @@ Yes please. Also I want to add a rule to never this promise timeout thing. For u
 ```text
 Don't add void before nextTick
 ```
+
+## 2026-10-30 04:37:07
+
+```text
+explain to me what this reveal function does
+```
+
+## 2026-10-30 04:40:00
+
+```text
+Okay it looks good to me. I would like you to also, in the design system, add tokens for text sizes that we use and I want you to have multiples of four in our design system. 22px shouldn't exist. It should be either 20 or 24.
+```
+
+## 2026-10-30 04:40:28
+
+```text
+Oh actually, let's do rems. Let's not do pixels.
+```
+
+## 2026-10-30 04:41:14
+
+```text
+I want you to add a linting rule that we only add `rem`s not pixels.
+```
+
+## 2026-10-30 04:43:51
+
+```text
+Okay looks good to me. I want you to commit and push.
+```
