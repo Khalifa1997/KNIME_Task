@@ -23,3 +23,17 @@ it('renders every Input error, retains the polite count description and removes 
   expect(wrapper.find('#input-errors').exists()).toBe(false)
   expect(wrapper.get('.node').classes()).not.toContain('node--invalid')
 })
+
+it('keeps and dims Input error content without an active node ring after a Run failure', () => {
+  const wrapper = mount(InputNode, {
+    props: {
+      text: 'x', maxInputLength: 3000, sourcePosition: Position.Right,
+      errors: ['Input text is too long.'], suppressErrors: true, dimmed: true,
+    },
+    global: { stubs: { Handle: true } },
+  })
+  expect(wrapper.get('#input-errors').text()).toBe('Input text is too long.')
+  expect(wrapper.get('#input-errors').classes()).toContain('is-dimmed')
+  expect(wrapper.get('.node').classes()).not.toContain('node--invalid')
+  expect(wrapper.get('textarea').attributes('aria-describedby')).toBe('input-count input-errors')
+})
