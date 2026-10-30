@@ -21,6 +21,8 @@ const props = defineProps<{
   values: Record<string, FieldValue>
   result: string | undefined
   dimmed: boolean
+  // Set while another Step is dragged over this one with Shift held, e.g. "Swap with Step 1".
+  swapLabel?: string | null
   targetPosition: Position
   sourcePosition: Position
 }>()
@@ -43,8 +45,12 @@ useFocusRequest('root', () => props.focusRequest, () => fieldFocusRequest.value 
   <div
     ref="root"
     class="node"
-    :class="{ 'node--invalid': invalid, 'errors-dimmed': dimmed }"
+    :class="{ 'node--invalid': invalid, 'errors-dimmed': dimmed, 'node--swap-target': swapLabel }"
   >
+    <span
+      v-if="swapLabel"
+      class="step-node__swap-label"
+    >{{ swapLabel }}</span>
     <!-- Edges are drawn for the user, never by them, so the handles are only decoration. -->
     <Handle
       aria-hidden="true"
@@ -133,6 +139,25 @@ useFocusRequest('root', () => props.focusRequest, () => fieldFocusRequest.value 
 </template>
 
 <style scoped>
+.node--swap-target {
+  position: relative;
+  outline: 2px dashed var(--accent);
+  outline-offset: 0.25rem;
+}
+
+.step-node__swap-label {
+  position: absolute;
+  top: -0.5rem;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--text);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
 .step-node__actions {
   display: flex;
   gap: 0.25rem;

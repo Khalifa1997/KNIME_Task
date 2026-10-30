@@ -5,8 +5,9 @@ import { fetchMetadata } from './api/metadata'
 import { postRun } from './api/run'
 import type { Metadata } from './api/types'
 import ChainCanvas from './components/ChainCanvas.vue'
-import { INPUT_ID, PHONE_QUERY, slot, type FocusRequest, type Layout } from './layout'
+import { INPUT_ID, PHONE_QUERY, slot, type FocusRequest, type Layout, type Point } from './layout'
 import { createRunState, executeRun, requestOf, runStatus, type Chain } from './run'
+import { hasStoredSession, readSession, restoreSession, useSessionSaving } from './session'
 
 const metadata = ref<Metadata | null>(null)
 const phase = ref<'loading' | 'metadata-error' | 'ready'>('loading')
@@ -20,14 +21,18 @@ async function loadMetadata() {
   metadataLoading = true
   phase.value = 'loading'
   metadataReason.value = ''
-  try {
-    // Presence only; saving and restoring belong to later stages.
-    hasSavedSession.value = sessionStorage.getItem('text-transformer.session') !== null
-  } catch {
-    hasSavedSession.value = false
-  }
+  const saved = readSession()
+  hasSavedSession.value = hasStoredSession()
   try {
     metadata.value = await fetchMetadata()
+    // Restoring brings back the work only; the run status stays Not run yet.
+    if (saved) {
+      const restored = restoreSession(saved, metadata.value, layout.mode)
+      chain.inputText = restored.inputText
+      chain.steps = restored.steps
+      layout.positions = restored.positions
+      layout.viewport = restored.viewport
+    }
     phase.value = 'ready'
   } catch (error) {
     metadataReason.value = error instanceof Error ? error.message : 'Something went wrong.'
@@ -44,6 +49,7 @@ const layout = reactive<Layout>({
   viewport: null,
 })
 const run = reactive(createRunState())
+const { saveFailed } = useSessionSaving({ chain, layout, metadata, phase })
 const focusRequest = ref<FocusRequest | null>(null)
 const activeElement = useActiveElement()
 
@@ -118,11 +124,31 @@ function moveStep(id: string, direction: -1 | 1) {
   chain.steps[targetIndex] = step
   layout.positions = { ...layout.positions, [id]: neighborPosition, [neighbor.id]: position }
   announce(`Moved ${stepLabel(step)} to position ${targetIndex + 1} of ${chain.steps.length}.`)
-  // Keeps focus on the moved Step unless one of its own buttons already has it.
+  keepFocusOn(id)
+}
+
+// Keeps focus on the Step unless one of its own buttons already has it.
+function keepFocusOn(id: string) {
   nextTick(() => {
     const active = activeElement.value
     if (!(active instanceof HTMLButtonElement) || active.disabled) focusRequest.value = { id, nodeOnly: true }
   })
+}
+
+// The dragged Step takes the target's place in the Chain and on the canvas, and the target takes
+// the spot the dragged Step was dragged from.
+function swapSteps(draggedId: string, targetId: string, draggedStart: Point) {
+  const index = chain.steps.findIndex((step) => step.id === draggedId)
+  const targetIndex = chain.steps.findIndex((step) => step.id === targetId)
+  const dragged = chain.steps[index]
+  const target = chain.steps[targetIndex]
+  if (!dragged || !target || index === targetIndex) return
+  const targetPosition = { ...(layout.positions[targetId] ?? slot(targetIndex + 1, layout.mode)) }
+  chain.steps[index] = target
+  chain.steps[targetIndex] = dragged
+  layout.positions = { ...layout.positions, [draggedId]: targetPosition, [targetId]: { ...draggedStart } }
+  announce(`Swapped ${stepLabel(dragged)} and ${stepLabel(target)}. ${stepLabel(dragged)} is now Step ${targetIndex + 1}.`)
+  keepFocusOn(draggedId)
 }
 
 const status = computed(() => runStatus(run, requestOf(chain)))
@@ -220,6 +246,13 @@ onKeyStroke('Enter', (event) => {
     >
       {{ announcement }}
     </div>
+    <p
+      v-if="saveFailed"
+      class="banner"
+      role="status"
+    >
+      Your changes couldn't be saved and may not survive a reload. You can keep editing.
+    </p>
     <main class="workspace">
       <p
         v-if="phase === 'loading'"
@@ -260,6 +293,7 @@ onKeyStroke('Enter', (event) => {
         :dimmed="status.dimmed"
         @delete-step="deleteStep"
         @move-step="moveStep"
+        @swap-steps="swapSteps"
         @update:input-text="chain.inputText = $event"
         @update-field="(stepId, name, value) => {
           const step = chain.steps.find((candidate) => candidate.id === stepId)
@@ -274,8 +308,8 @@ onKeyStroke('Enter', (event) => {
 
 <style scoped>
 .app {
-  display: grid;
-  grid-template: auto 1fr / minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   height: 100dvh;
 }
 
@@ -334,6 +368,7 @@ onKeyStroke('Enter', (event) => {
 
 .workspace {
   display: grid;
+  flex: 1;
   min-height: 0;
 }
 
