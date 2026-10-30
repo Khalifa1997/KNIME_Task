@@ -1,0 +1,7 @@
+{
+  "limits": { "maxInputLength": 3000, "maxSteps": 30 },
+  "transformations": [
+    { "id": "uppercase", "label": "Uppercase", "description": "Converts the text to upper case.", "fields": [] },
+    { "id": "lowercase", "label": "Lowercase", "description": "Converts the text to lower case.", "fields": [] }
+  ]
+}

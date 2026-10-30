@@ -37,3 +37,10 @@ out/
 hs_err_pid*
 .mvn/wrapper/maven-wrapper.jar
 !gradle/wrapper/gradle-wrapper.jar
+
+# Frontend tooling
+*.tsbuildinfo
+.eslintcache
+test-results/
+playwright-report/
+.playwright-cli/
