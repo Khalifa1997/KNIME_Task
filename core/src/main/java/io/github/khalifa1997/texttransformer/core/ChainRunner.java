@@ -13,15 +13,51 @@ public final class ChainRunner {
     }
 
     public RunResult run(String inputText, List<StepInput> steps) {
+        var errors = new ArrayList<RunError>();
+        var prepared = new ArrayList<PreparedStep>(steps.size());
+        var limits = Limits.DEFAULT;
+        if (inputText.length() > limits.maxInputLength()) {
+            errors.add(new InputError(ErrorCode.INPUT_TOO_LONG,
+                    "Input text is longer than " + FieldValidator.number(limits.maxInputLength()) + " characters."));
+        }
+        if (steps.size() > limits.maxSteps()) {
+            errors.add(new InputError(ErrorCode.TOO_MANY_STEPS,
+                    "A Chain can have at most " + FieldValidator.number(limits.maxSteps()) + " Steps."));
+        }
+        for (int index = 0; index < steps.size(); index++) {
+            var step = steps.get(index);
+            var found = registry.find(step.transformationId());
+            if (found.isEmpty()) {
+                errors.add(new StepError(index, null, ErrorCode.UNKNOWN_TRANSFORMATION,
+                        "Unknown Transformation \"" + step.transformationId() + "\"."));
+                continue;
+            }
+            var transformation = found.get();
+            var validated = FieldValidator.validate(transformation.fields(), step.values());
+            var problems = validated.problems().isEmpty()
+                    ? transformation.check(validated.values()) : validated.problems();
+            for (var problem : problems) {
+                errors.add(new StepError(index, problem.field(), problem.code(), problem.message()));
+            }
+            prepared.add(new PreparedStep(transformation, validated.values()));
+        }
+        if (!errors.isEmpty()) {
+            return new RunResult.Rejected(errors);
+        }
+
         var stepOutputs = new ArrayList<String>(steps.size());
         var text = inputText;
-        for (var step : steps) {
-            var transformation = registry.find(step.transformationId())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Unknown Transformation: " + step.transformationId()));
-            text = transformation.apply(text, FieldValues.of(transformation.fields(), step.values()));
+        for (int index = 0; index < prepared.size(); index++) {
+            var step = prepared.get(index);
+            text = step.transformation().apply(text, step.values());
+            if (text.length() > limits.maxInputLength()) {
+                return new RunResult.Rejected(List.of(new StepError(index, null, ErrorCode.RESULT_TOO_LONG,
+                        "Result is longer than " + FieldValidator.number(limits.maxInputLength()) + " characters.")));
+            }
             stepOutputs.add(text);
         }
-        return new RunResult.Completed(text, List.copyOf(stepOutputs));
+        return new RunResult.Completed(text, stepOutputs);
     }
+
+    private record PreparedStep(Transformation transformation, FieldValues values) {}
 }

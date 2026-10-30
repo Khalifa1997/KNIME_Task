@@ -9,8 +9,8 @@ import java.util.Map;
  * The typed, defaulted Field values supplied to a Transformation.
  *
  * <p>Only Fields declared by the Transformation are retained. A missing or null optional value is
- * replaced with the Field's default value. Validation and error reporting are added by the Step
- * errors work; this class keeps applying Transformations independent of Jackson's raw values.
+ * replaced with the Field's default value. The runner validates and normalizes values before passing them to a Transformation.
+ * Direct callers of {@link #of} must supply values of the declared Java types.
  */
 public final class FieldValues {
 
