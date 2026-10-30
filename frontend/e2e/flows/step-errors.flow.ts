@@ -4,7 +4,7 @@ import problem from '../../../contract/post-chain-run.two-broken-steps.422.json'
 // Rehearsed with the isolated issue-25 playwright-cli session against the lane's real jar.
 test('shows both broken Steps while preserving focus and leaves a newly added Step clean', async ({ page, expectDomainRejection }, testInfo) => {
   await page.goto('/')
-  const add = page.getByRole('region', { name: 'Add Step' }).getByRole('button', { name: 'Replace' })
+  const add = page.getByRole('region', { name: 'Add Step' }).getByRole('button', { name: 'Replace', exact: true })
   const first = page.getByRole('group', { name: 'Step 1: Replace' })
   const second = page.getByRole('group', { name: 'Step 2: Replace' })
   const status = page.getByRole('status')

@@ -11,7 +11,7 @@ test('attaches all Step errors, clears previews, preserves focus and keeps a fre
     if (request.method() === 'POST' && request.url().endsWith('/api/chain/run')) requests.push(request.url())
   })
   await page.goto('/')
-  const add = page.getByRole('region', { name: 'Add Step' }).getByRole('button', { name: 'Replace' })
+  const add = page.getByRole('region', { name: 'Add Step' }).getByRole('button', { name: 'Replace', exact: true })
   const first = page.getByRole('group', { name: 'Step 1: Replace' })
   const second = page.getByRole('group', { name: 'Step 2: Replace' })
   const output = page.getByRole('group', { name: 'Output' })

@@ -7,7 +7,7 @@ test('a reload brings back the Input text, Steps, Field values and node position
   await expect(status).toHaveText('Not run yet')
 
   await page.getByRole('textbox', { name: 'Input text' }).fill('Hello World')
-  await palette.getByRole('button', { name: 'Replace' }).click()
+  await palette.getByRole('button', { name: 'Replace', exact: true }).click()
   await palette.getByRole('button', { name: 'Uppercase' }).click()
   const replace = page.getByRole('group', { name: 'Step 1: Replace' })
   await replace.getByRole('textbox').first().fill('World')

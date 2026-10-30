@@ -69,7 +69,7 @@ test('edits the Fields of a Replace Step and sees the changed Output', async ({ 
 
   const palette = page.getByRole('region', { name: 'Add Step' })
   await page.getByRole('textbox', { name: 'Input text' }).fill('a-b-a')
-  await palette.getByRole('button', { name: 'Replace' }).click()
+  await palette.getByRole('button', { name: 'Replace', exact: true }).click()
 
   const step = page.getByRole('group', { name: 'Step 1: Replace' })
   // Addition reveals and focuses the first Field asynchronously; wait for that action itself.
