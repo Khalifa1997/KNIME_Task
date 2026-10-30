@@ -46,9 +46,7 @@ const layout = reactive<Layout>({
 const run = reactive(createRunState())
 const canvas = ref<InstanceType<typeof ChainCanvas> | null>(null)
 
-onMounted(() => {
-  void loadMetadata()
-})
+onMounted(loadMetadata)
 
 // Crossing the breakpoint keeps the Chain but lays it out afresh for the new mode.
 watch(isPhone, (phone) => {
