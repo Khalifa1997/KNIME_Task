@@ -178,3 +178,39 @@ test('keeps errors attached to stable ids after a move and drops only the delete
   await expect(page.locator('.node--invalid')).toHaveCount(1)
   await expect(input).toHaveAttribute('aria-invalid', 'true')
 })
+
+for (const timing of ['before', 'after'] as const) {
+  test(`keeps Output unavailable when the last errored Step is deleted ${timing} rejection`, async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('textbox', { name: 'Input text', exact: true }).fill('a')
+    await page.getByRole('region', { name: 'Add Step' }).getByRole('button', { name: 'Replace', exact: true }).click()
+    let release!: () => void
+    const released = new Promise<void>((resolve) => { release = resolve })
+    let received!: () => void
+    const rejectionReady = new Promise<void>((resolve) => { received = resolve })
+    await page.route('**/api/chain/run', async (route) => {
+      const response = await route.fetch()
+      expect(response.status()).toBe(422)
+      received()
+      if (timing === 'before') await released
+      await route.fulfill({ response })
+    })
+    await page.getByRole('button', { name: 'Run', exact: true }).click()
+    await rejectionReady
+    const step = page.getByRole('group', { name: 'Step 1: Replace', exact: true })
+    await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled({ enabled: timing === 'after' })
+    await step.getByRole('button', { name: /Delete/ }).click()
+    release()
+    await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled()
+    await expect(page.locator('.vue-flow__node-step')).toHaveCount(0)
+    const output = page.getByRole('group', { name: 'Output', exact: true })
+    await expect(output).toContainText('Press Run to see the Output.')
+    await expect(output).not.toContainText('(empty)')
+    // A subsequent successful run, even one with empty Output, makes Output available again.
+    await page.getByRole('textbox', { name: 'Input text', exact: true }).fill('')
+    await page.unroute('**/api/chain/run')
+    await page.getByRole('button', { name: 'Run', exact: true }).click()
+    await expect(page.getByRole('status')).toHaveText('Up to date')
+    await expect(output).toContainText('(empty)')
+  })
+}

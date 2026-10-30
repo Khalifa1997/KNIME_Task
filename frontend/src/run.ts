@@ -9,7 +9,8 @@ export interface Chain {
 
 export interface RunState {
   status: 'idle' | 'running' | 'ok' | 'rejected' | 'failed'
-  output: string
+  // Undefined until a successful run, or after a rejection clears previous Output.
+  output: string | undefined
   results: Record<string, string>
   errors: RunError[]
   detail: string
@@ -20,7 +21,7 @@ export interface RunState {
 }
 
 export function createRunState(): RunState {
-  return { status: 'idle', output: '', results: {}, errors: [], detail: '', sentRequest: null, sequence: 0 }
+  return { status: 'idle', output: undefined, results: {}, errors: [], detail: '', sentRequest: null, sequence: 0 }
 }
 
 export function requestOf(chain: Chain): RunRequest {
@@ -73,7 +74,7 @@ export async function executeRun(
       const liveIds = new Set(chain.steps.map((step) => step.id))
       run.errors = error.problem.errors.filter((item) => item.stepId === null || liveIds.has(item.stepId))
       run.detail = error.problem.detail
-      run.output = ''
+      run.output = undefined
       run.results = {}
       run.sentRequest = JSON.stringify(request)
       return

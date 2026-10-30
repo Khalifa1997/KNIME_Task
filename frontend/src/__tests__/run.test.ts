@@ -195,7 +195,7 @@ describe('Step and Input rejection', () => {
     logged.mockRestore()
     expect(run.status).toBe('rejected')
     expect(run.results).toEqual({})
-    expect(run.output).toBe('')
+    expect(run.output).toBeUndefined()
     expect(run.errors).toEqual(problem.errors)
     expect(run.sentRequest).toBe(JSON.stringify(requestOf(chain)))
     expect(status(run, chain)).toBe(problem.detail)
@@ -237,4 +237,33 @@ it('prunes deleted Step errors from a pending rejection but retains Input and li
   expect(run.errors).toEqual([problem.errors[1], inputError])
   expect(run.sentRequest).toBe(JSON.stringify(requestOf(chainOf())))
   expect(run.detail).toBe(problem.detail)
+})
+
+it.each(['before', 'after'])('keeps Output unavailable when the last errored Step is deleted %s rejection', async (timing) => {
+  const run = createRunState()
+  const chain: Chain = {
+    inputText: 'a',
+    steps: [{ id: UPPER, transformationId: 'replace', values: { search: '', replacement: '' } }],
+  }
+  // A rejected run must also discard Output from a previous successful run.
+  await executeRun(run, chain, async () => response)
+  let reject!: (reason: RunRejected) => void
+  const pending = executeRun(run, chain, () => new Promise((_resolve, fail) => { reject = fail }))
+  const deleteStep = () => {
+    chain.steps = []
+    run.errors = run.errors.filter((error) => error.stepId !== UPPER)
+  }
+  if (timing === 'before') deleteStep()
+  reject(new RunRejected({ ...problem, errors: [problem.errors[0]!] }))
+  await pending
+  if (timing === 'after') deleteStep()
+  expect(run.errors).toEqual([])
+  expect(run.output).toBeUndefined()
+})
+
+it('distinguishes a successful empty Output from unavailable Output', async () => {
+  const run = createRunState()
+  expect(run.output).toBeUndefined()
+  await executeRun(run, { inputText: '', steps: [] }, async () => ({ output: '', steps: [] }))
+  expect(run.output).toBe('')
 })

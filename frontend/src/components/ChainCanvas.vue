@@ -299,7 +299,7 @@ defineExpose({ reveal, retainStepFocus })
 
     <template #node-outputtext>
       <OutputNode
-        :output="run.sentRequest === null || run.errors.length > 0 ? undefined : run.output"
+        :output="run.output"
         :dimmed="dimmed"
         :target-position="ends.target"
       />
