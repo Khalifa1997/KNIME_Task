@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { Handle, type Position } from '@xyflow/vue'
-import { useNodeWrapperFocus } from '../nodeFocus'
-import { OUTPUT_ID, titleIdOf } from '../layout'
+import { useFocusRequest } from '../nodeFocus'
+import { OUTPUT_ID, titleIdOf, type FocusRequest } from '../layout'
 
-defineProps<{
+const props = defineProps<{
+  focusRequest?: FocusRequest | null
   // Undefined until a run has produced one.
   output: string | undefined
   dimmed: boolean
   targetPosition: Position
 }>()
 
-const focus = useNodeWrapperFocus('root')
-
-defineExpose({ focus })
+useFocusRequest('root', () => props.focusRequest)
 </script>
 
 <template>

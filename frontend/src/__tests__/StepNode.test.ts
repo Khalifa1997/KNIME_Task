@@ -70,3 +70,35 @@ it('keeps the normal card and renders all whole-Step and Field details verbatim'
   expect(wrapper.get('.field .error-messages').text()).toContain('Field one.')
   expect(wrapper.get('.field .error-messages').text()).toContain('Field two.')
 })
+
+it('moves focus to its first Field when asked, but not when only the node was asked for', async () => {
+  const transformation = metadata.transformations.find((item) => item.id === 'replace')!
+  const wrapper = mount(StepNode, {
+    attachTo: document.body,
+    props: {
+      invalid: false,
+      wholeStepErrors: [],
+      fieldErrors: {},
+      stepId: 'replace-step',
+      index: 0,
+      canMoveEarlier: false,
+      canMoveLater: false,
+      phone: false,
+      label: transformation.label,
+      fields: transformation.fields as FieldMeta[],
+      values: { search: 'a', replacement: '' },
+      result: undefined,
+      dimmed: false,
+      targetPosition: Position.Left,
+      sourcePosition: Position.Right,
+    },
+    global: { stubs: { Handle: true } },
+  })
+
+  await wrapper.setProps({ focusRequest: { id: 'replace-step', nodeOnly: true } })
+  expect(document.activeElement).toBe(document.body)
+
+  await wrapper.setProps({ focusRequest: { id: 'replace-step', nodeOnly: false } })
+  expect(document.activeElement).toBe(wrapper.get('input[id="field-replace-step-search"]').element)
+  wrapper.unmount()
+})

@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed, useTemplateRef, watch } from 'vue'
 import type { FieldMeta, FieldValue } from '../api/types'
+import type { FocusRequest } from '../layout'
 
 const props = defineProps<{
   stepId: string
   field: FieldMeta
   value: FieldValue
   errors?: string[]
+  focusRequest?: FocusRequest | null
 }>()
 
 const emit = defineEmits<{ 'update:value': [value: FieldValue] }>()
@@ -41,7 +43,9 @@ function onSelectInput(event: Event) {
   emit('update:value', (event.target as HTMLSelectElement).value)
 }
 
-defineExpose({ focus: () => control.value?.focus({ preventScroll: true }) })
+watch(() => props.focusRequest, (request) => {
+  if (request) control.value?.focus({ preventScroll: true })
+})
 </script>
 
 <template>

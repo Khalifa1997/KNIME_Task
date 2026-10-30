@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Handle, type Position } from '@xyflow/vue'
-import { useNodeWrapperFocus } from '../nodeFocus'
-import { INPUT_ID, titleIdOf } from '../layout'
+import { useFocusRequest } from '../nodeFocus'
+import { INPUT_ID, titleIdOf, type FocusRequest } from '../layout'
 
 const props = defineProps<{
+  focusRequest?: FocusRequest | null
   errors: string[]
   suppressErrors?: boolean
   dimmed?: boolean
@@ -24,9 +25,7 @@ function onInput(event: Event) {
   emit('update:text', (event.target as HTMLTextAreaElement).value)
 }
 
-const focus = useNodeWrapperFocus('root')
-
-defineExpose({ focus })
+useFocusRequest('root', () => props.focusRequest)
 </script>
 
 <template>

@@ -40,3 +40,9 @@ export function handlePositions(mode: LayoutMode) {
     ? { target: Position.Top, source: Position.Bottom }
     : { target: Position.Left, source: Position.Right }
 }
+
+// Asks the node `id` to take focus: its first Field, or only the node itself when `nodeOnly`.
+export interface FocusRequest {
+  id: string
+  nodeOnly: boolean
+}

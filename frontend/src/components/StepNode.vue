@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { shallowRef } from 'vue'
+import { computed } from 'vue'
 import { Handle, type Position } from '@xyflow/vue'
-import { useNodeWrapperFocus } from '../nodeFocus'
-import { titleIdOf } from '../layout'
+import { useFocusRequest } from '../nodeFocus'
+import { titleIdOf, type FocusRequest } from '../layout'
 import type { FieldMeta, FieldValue } from '../api/types'
 import FieldInput from './FieldInput.vue'
 
-defineProps<{
+const props = defineProps<{
+  focusRequest?: FocusRequest | null
   invalid: boolean
   wholeStepErrors: string[]
   fieldErrors: Record<string, string[]>
@@ -30,18 +31,11 @@ const emit = defineEmits<{
   'move-step': [stepId: string, direction: -1 | 1]
 }>()
 
-const focusWrapper = useNodeWrapperFocus('root')
-const firstField = shallowRef<InstanceType<typeof FieldInput> | null>(null)
-
-function focus(nodeOnly = false) {
-  if (firstField.value && !nodeOnly) {
-    firstField.value.focus()
-  } else {
-    focusWrapper()
-  }
-}
-
-defineExpose({ focus })
+// The first Field takes focus unless only the node was asked for.
+const fieldFocusRequest = computed(
+  () => (props.fields.length && !props.focusRequest?.nodeOnly ? props.focusRequest : null),
+)
+useFocusRequest('root', () => props.focusRequest, () => fieldFocusRequest.value !== null)
 </script>
 
 <template>
@@ -109,7 +103,7 @@ defineExpose({ focus })
     <FieldInput
       v-for="(field, fieldIndex) in fields"
       :key="field.name"
-      :ref="(el) => { if (fieldIndex === 0) firstField = el as InstanceType<typeof FieldInput> | null }"
+      :focus-request="fieldIndex === 0 ? fieldFocusRequest : null"
       :step-id="stepId"
       :field="field"
       :errors="fieldErrors[field.name]"

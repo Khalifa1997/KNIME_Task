@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import { until, usePreferredReducedMotion } from '@vueuse/core'
 import {
   Background,
@@ -19,6 +19,7 @@ import {
   handlePositions,
   slot,
   titleIdOf,
+  type FocusRequest,
   type Layout,
   type Point,
 } from '../layout'
@@ -34,6 +35,7 @@ const props = defineProps<{
   maxInputLength: number
   run: RunState
   dimmed: boolean
+  focusRequest?: FocusRequest | null
 }>()
 
 const emit = defineEmits<{
@@ -193,16 +195,12 @@ function onMoveEnd({ viewport }: { viewport: Viewport }) {
   emit('update:viewport', { x: viewport.x, y: viewport.y, zoom: viewport.zoom })
 }
 
-// Each node component exposes its own focus, so no DOM lookups by id.
-const nodeHandles = new Map<string, { focus: (nodeOnly?: boolean) => void }>()
+// Handed to the node that should take focus, once the canvas has panned to it.
+const nodeFocus = shallowRef<FocusRequest | null>(null)
+const focusById = computed(() => (nodeFocus.value ? { [nodeFocus.value.id]: nodeFocus.value } : {}))
 
-function setNodeHandle(id: string, instance: unknown) {
-  if (instance) nodeHandles.set(id, instance as { focus: (nodeOnly?: boolean) => void })
-  else nodeHandles.delete(id)
-}
-
-// Pans to a node, keeping the zoom, and moves focus to it.
-async function reveal(id: string, nodeOnly = false) {
+// Pans to a node, keeping the zoom, and asks it to take focus.
+async function reveal({ id, nodeOnly }: FocusRequest) {
   // Gives up quietly after half a second; the fallbacks below cover an unmeasured node.
   await until(() => getNode(id)?.measured?.width).toBeTruthy({ timeout: 500 })
   const node = getNode(id)
@@ -213,7 +211,7 @@ async function reveal(id: string, nodeOnly = false) {
     zoom: getViewport().zoom,
     duration: duration(),
   })
-  nodeHandles.get(id)?.focus(nodeOnly)
+  nodeFocus.value = { id, nodeOnly }
 }
 
 function focusedStep(event: KeyboardEvent) {
@@ -238,15 +236,9 @@ function onKeyup(event: KeyboardEvent) {
   if (node) emit('update:positions', { [node.id]: { ...node.position } })
 }
 
-function retainStepFocus(id: string) {
-  nextTick(() => {
-    if (!(document.activeElement instanceof HTMLButtonElement) || document.activeElement.disabled) {
-      nodeHandles.get(id)?.focus(true)
-    }
-  })
-}
-
-defineExpose({ reveal, retainStepFocus })
+watch(() => props.focusRequest, (request) => {
+  if (request) reveal(request)
+})
 </script>
 
 <template>
@@ -277,7 +269,7 @@ defineExpose({ reveal, retainStepFocus })
 
     <template #node-inputtext>
       <InputNode
-        :ref="(instance) => setNodeHandle(INPUT_ID, instance)"
+        :focus-request="focusById[INPUT_ID] ?? null"
         :text="chain.inputText"
         :errors="inputErrors"
         :suppress-errors="run.status === 'failed'"
@@ -291,7 +283,7 @@ defineExpose({ reveal, retainStepFocus })
     <template #node-step="{ id }">
       <StepNode
         v-if="stepPropsById[id]"
-        :ref="(instance) => setNodeHandle(id, instance)"
+        :focus-request="focusById[id] ?? null"
         v-bind="stepPropsById[id]"
         :result="run.results[id]"
         :dimmed="dimmed"
@@ -305,7 +297,7 @@ defineExpose({ reveal, retainStepFocus })
 
     <template #node-outputtext>
       <OutputNode
-        :ref="(instance) => setNodeHandle(OUTPUT_ID, instance)"
+        :focus-request="focusById[OUTPUT_ID] ?? null"
         :output="run.output"
         :dimmed="dimmed"
         :target-position="ends.target"
