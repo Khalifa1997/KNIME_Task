@@ -370,3 +370,391 @@ yes
 ```text
 yes
 ```
+
+## 2026-10-26 00:18:20
+
+```text
+sounds good which text is next
+```
+
+## 2026-10-26 00:18:57
+
+```text
+go ahead
+```
+
+## 2026-10-26 00:22:23
+
+```text
+1. I would like you to explain it more to me.
+2. Yes.
+3. Yes.
+4. Yes, the ones above.
+5.yes
+6. Yes.
+```
+
+## 2026-10-26 00:25:24
+
+```text
+Question 7, yes. Question 1: Let's go for option B because we might go for internationalization in the future and I can see how this can be helpful to have.
+```
+
+## 2026-10-26 01:01:02
+
+```text
+yes
+```
+
+## 2026-10-26 01:03:32
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/9
+```
+
+## 2026-10-26 01:37:21
+
+```text
+For A it's on. I want fields to be inside the note. Input and output should be text panels. Explicit run: yes. After a filter is on focus should move to this error, error fields, and notes. Seems like on mobile I cannot move the notes. I get this warning. 
+
+installHook.js:1 [Vue Flow]: `<VueFlow>` got a one-way `:edges` binding with no `@edges-change` handler, so edge interactions (selection, removal) are dropped. Use `v-model:edges` to let Vue Flow apply + sync them, or handle `@edges-change` yourself.
+
+Oh and by the way, I want the background to look better so I want it kind of like N8N but with a black background. What you did on the first iteration, when you showed me all the prototypes, actually was really good so I want something a bit more similar. The nodes look great.
+```
+
+## 2026-10-26 01:53:28
+
+```text
+I want to use variant A except I want the background and the theme of variant D.
+```
+
+## 2026-10-26 02:00:43
+
+```text
+I also see a lot of use `narrow` so let's use `vue use`, actually, and try and reuse as much code as possible from the composables that `vue use` offers.
+```
+
+## 2026-10-26 13:21:22
+
+```text
+Provide the questions for me in a way that I can answer again. I see that we have many variants already. I thought I told you that I only wanted Variant A. So far it looks good to me.
+```
+
+## 2026-10-26 13:59:26
+
+```text
+1b,2b,3a, explain 4 more for me, 6a,7a
+```
+
+## 2026-10-26 14:05:52
+
+```text
+4a looks good to me
+```
+
+## 2026-10-26 14:28:43
+
+```text
+5a so we keep it responsive
+```
+
+## 2026-10-26 15:00:55
+
+```text
+give me the ticket links i should look into next
+```
+
+## 2026-10-26 15:03:57
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/11
+```
+
+## 2026-10-26 15:34:12
+
+```text
+what's causing the delay?
+```
+
+## 2026-10-26 15:41:04
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/11
+```
+
+## 2026-10-26 15:45:58
+
+```text
+yes to all, Yes I would like a loading state before the transformation is allowed, coming from the backend. If there is an error don't display the session data at all. Instead display an error. It's important to have feedback for both loading and error states across the application, even for the POST request. Question 4 yes
+```
+
+## 2026-10-26 15:48:07
+
+```text
+1. Yes.
+2. Can you explain it more?
+3. Yes.
+4. Yes.
+```
+
+## 2026-10-26 15:49:25
+
+```text
+yes sounds good to me
+```
+
+## 2026-10-26 15:50:38
+
+```text
+Question 9 sounds good to me. Both are fine.
+```
+
+## 2026-10-26 15:53:50
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/16
+```
+
+## 2026-10-26 16:00:11
+
+```text
+The application shouldn't be too deep that we have a create app store factory. I believe just having the state as a reactive state in the base layer and using props to pass it down would be perfect. That's for question 1.
+1. Yes that's fine by me. We can use `crypto.randomUUID`.
+2. Can you explain it more to me?
+3. Explain it also.
+4. Okay.
+5. Yes.
+6. Let's keep it as simple as possible. We don't need all these actions.
+7. Yes.
+8. Yes.
+9. Yes.
+```
+
+## 2026-10-26 16:01:46
+
+```text
+Question 12: Yes, use props down, emits up, 13. Question 13: Yes and yes.
+```
+
+## 2026-10-26 16:02:20
+
+```text
+yes
+```
+
+## 2026-10-26 16:03:26
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/12
+```
+
+## 2026-10-26 16:07:16
+
+```text
+1. Yes there is only one seam.
+2. Let's fix this.
+3. These are too many tokens. If a token is used once you can easily write it inside the view file, CSS section. You don't need a token for everything. Same goes for spacing, sizes, etc., everything.
+4. We don't need to have this reduced motion. Think, your honor, and also just ban it completely.
+5. Yes.
+6. Yes.
+7. Yes.
+```
+
+## 2026-10-26 16:08:31
+
+```text
+Question 4: I would like you to build me a prototype or change what I have right now so I can see it with my own eyes.
+
+Question 3: Sure that's fine by me.
+```
+
+## 2026-10-26 16:12:10
+
+```text
+Yeah let's keep the motion. It's fine by me.
+```
+
+## 2026-10-26 16:13:28
+
+```text
+sure show me also i noticed when i would Focus on one of the fields. The border and the shadow would be too big, so they would almost cover the label for this input.
+```
+
+## 2026-10-26 16:17:46
+
+```text
+no i want the dashes to always flow and actually when i run it would be get filled with the color yellow gradually from start to end..
+```
+
+## 2026-10-26 16:20:53
+
+```text
+let's make the yellow flash and fade after 1.2s
+```
+
+## 2026-10-26 16:21:57
+
+```text
+on fail it should also turn red right before the step it failed at first...
+```
+
+## 2026-10-26 16:31:10
+
+```text
+yes
+```
+
+## 2026-10-26 16:32:39
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/17
+```
+
+## 2026-10-26 16:36:11
+
+```text
+1. Yes you can add failure to the glossary.
+2. Yes.
+3. Yes.
+4. I don't want automatic tries for this.
+5. Yes.
+6. Yes.
+7. Yes you can show me a prototype to explain question 7 to me.
+```
+
+## 2026-10-26 16:40:37
+
+```text
+Looks good to me but it seems like, on error, the borders are not the same in the x direction as they are in the y direction. Let's fix that.
+```
+
+## 2026-10-26 16:44:10
+
+```text
+i mean the nodes error stTE HAVe uninform borders on top and on the left/right
+```
+
+## 2026-10-26 16:48:29
+
+```text
+yes please
+```
+
+## 2026-10-26 16:49:53
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/10
+```
+
+## 2026-10-26 16:54:43
+
+```text
+1. A
+2. Yes
+3. Yes
+4. Yes
+5. Yes
+6. Yes
+7. Yes
+```
+
+## 2026-10-26 16:56:09
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/14
+```
+
+## 2026-10-26 16:58:25
+
+```text
+1. Yes.
+2. Explain it more to me.
+3. Yes.
+4. Yes.
+5. Yes.
+6. Yes.
+```
+
+## 2026-10-26 17:01:01
+
+```text
+What are other options that people use in this setup for Spring Boot and Vue.js frontends?
+```
+
+## 2026-10-26 17:02:56
+
+```text
+People who are running the project to see the task might not necessarily have Docker. What are other options that do not necessitate having Docker?
+```
+
+## 2026-10-26 17:04:33
+
+```text
+1. Maven builds the frontend, and Boot serves it from the jar. This is what I proposed.
+ - How: frontend-maven-plugin (eirslett), or exec-maven-plugin calling the npm already installed on the machine. The output goes to static/, and the result is a single jar.
+ - Used by: JHipster, the Spring guides' "Spring Boot + React" tutorial, and many monorepos.
+ - Pros: one artifact, one port, no CORS, and the native path needs only a JDK.
+ - Cons: slower Maven builds, and Node becomes part of the Java build.
+
+let's go for this
+```
+
+## 2026-10-26 17:05:50
+
+```text
+1\. Yes.  
+2\. Yes.  
+3\. Yes.  
+This order
+```
+
+## 2026-10-26 17:07:14
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/15
+```
+
+## 2026-10-26 17:12:51
+
+```text
+1. Yes.
+2. Yes.
+3. Yes.
+```
+
+## 2026-10-26 17:46:28
+
+```text
+/skill:wayfinder  Testing
+ strategy: layers, tools, and what the build runs
+```
+
+## 2026-10-26 17:58:12
+
+```text
+Q1: Yes, Q2: Yes, MockMvcTester + contract/ fixtures compared strictly., Q3: Yes, Q4: YES, Q5: Yes sure, Q6: Yes, Q7: No, Q8: No coverage gate
+```
+
+## 2026-10-26 18:00:14
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/19
+```
+
+## 2026-10-26 18:01:48
+
+```text
+Yes to all
+```
+
+## 2026-10-26 18:04:12
+
+```text
+yes to all three
+```
+
+## 2026-10-30 01:45:48
+
+```text
+Let's keep the view flow issue on mobile now for later. Just make a small issue for it using the PR skill. I would also like you to do all the commits. Glossary would go to the main branch and the others would go to the prototype branch. The repository is meant to be private. It's fine.
+```

@@ -39,3 +39,11 @@ _Avoid_: Validation failure, node error
 **Input error**:
 A problem with the Input text, or with the Chain as a whole, that stops the Chain from running, reported against no Step.
 _Avoid_: Step error (when no single Step is at fault)
+
+**Saved session**:
+What survives a reload of the page: the Input text, the Chain with its Field values, and where things sit on the canvas. Run results and errors are not part of it.
+_Avoid_: Snapshot, cache, draft
+
+**Run failure**:
+A run that couldn't be carried out for a reason outside the Chain, such as the server being unreachable. It says nothing about the Steps.
+_Avoid_: Error (on its own), Step error, Input error
