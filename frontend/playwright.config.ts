@@ -1,10 +1,9 @@
-import { join } from 'node:path'
+import { playwrightServer } from './playwright-server'
 import process from 'node:process'
 import { defineConfig, devices } from '@playwright/test'
 
 // End-to-end tests run against the real jar: build it first with `./mvnw package`.
-const port = 8181
-const java = process.env.JAVA_HOME ? join(process.env.JAVA_HOME, 'bin', 'java') : 'java'
+const server = playwrightServer(8181)
 
 export default defineConfig({
   testDir: './e2e',
@@ -13,7 +12,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   reporter: 'list',
   use: {
-    baseURL: `http://localhost:${port}`,
+    baseURL: server.baseURL,
     trace: 'retain-on-failure',
   },
   projects: [
@@ -27,10 +26,5 @@ export default defineConfig({
       use: { ...devices['Pixel 7'] },
     },
   ],
-  webServer: {
-    command: `"${java}" -jar ../app/target/app.jar --server.port=${port}`,
-    url: `http://localhost:${port}/api/transformations`,
-    reuseExistingServer: false,
-    timeout: 60 * 1000,
-  },
+  webServer: server.webServer,
 })
