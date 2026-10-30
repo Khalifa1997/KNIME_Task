@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     // Spring Boot runs on 8080 in development; one origin for the browser, so no CORS.
     proxy: {
-      '/api': 'http://localhost:8080',
+      '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:8080',
     },
   },
 })
