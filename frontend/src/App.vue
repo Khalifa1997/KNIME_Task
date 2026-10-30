@@ -163,8 +163,8 @@ onKeyStroke('Enter', (event) => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 18px;
-  padding: 10px 16px;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 1rem;
   background: #000;
   border-bottom: 1px solid var(--line);
 }
@@ -172,8 +172,8 @@ onKeyStroke('Enter', (event) => {
 .app-header__title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 1.1rem;
+  gap: 0.5rem;
+  font-size: var(--text-lg);
   white-space: nowrap;
 }
 
@@ -184,14 +184,14 @@ onKeyStroke('Enter', (event) => {
 .palette {
   display: flex;
   align-items: center;
-  gap: 6px 10px;
+  gap: 0.5rem 0.75rem;
   flex: 1;
   min-width: 0;
 }
 
 .palette__label {
   color: var(--muted-on-dark);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 400;
   white-space: nowrap;
 }
@@ -199,7 +199,7 @@ onKeyStroke('Enter', (event) => {
 .palette__list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 0.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -208,7 +208,7 @@ onKeyStroke('Enter', (event) => {
 .run-bar {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 0.75rem;
   margin-left: auto;
 }
 
@@ -232,7 +232,7 @@ onKeyStroke('Enter', (event) => {
   .palette__list {
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding-bottom: 4px;
+    padding-bottom: 0.25rem;
   }
 }
 </style>

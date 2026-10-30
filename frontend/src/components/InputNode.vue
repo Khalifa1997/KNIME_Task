@@ -60,7 +60,7 @@ function onInput(event: Event) {
 .input-node__text {
   display: block;
   width: 100%;
-  padding: 6px 8px;
+  padding: 0.5rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--card);
@@ -74,9 +74,9 @@ function onInput(event: Event) {
 }
 
 .input-node__count {
-  margin-top: 4px;
+  margin-top: 0.25rem;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   text-align: right;
 }
 

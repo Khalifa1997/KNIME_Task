@@ -249,10 +249,10 @@ defineExpose({ reveal })
 .chain-canvas .vue-flow__attribution a {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 0 6px;
+  min-height: 1.5rem;
+  padding: 0 0.25rem;
   color: var(--muted-on-dark);
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
 }
 
 /* Our cards draw their own border; Vue Flow's wrapper only positions them. */

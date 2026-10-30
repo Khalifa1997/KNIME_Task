@@ -58,17 +58,17 @@ defineProps<{
 .step-node__index {
   display: inline-grid;
   place-items: center;
-  min-width: 22px;
-  height: 22px;
+  min-width: 1.5rem;
+  height: 1.5rem;
   border-radius: 50%;
   background: var(--text);
   color: var(--card);
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
 }
 
 .step-node__result-label {
   display: block;
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
 }
 </style>
