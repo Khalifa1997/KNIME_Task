@@ -40,6 +40,8 @@ const emit = defineEmits<{
   'update:inputText': [value: string]
   'update:positions': [positions: Record<string, Point>]
   'update:viewport': [viewport: Viewport]
+  'delete-step': [stepId: string]
+  'move-step': [stepId: string, direction: -1 | 1]
   'update-field': [stepId: string, name: string, value: FieldValue]
 }>()
 
@@ -64,6 +66,9 @@ const stepPropsById = computed(() => {
     return [step.id, {
       stepId: step.id,
       index,
+      canMoveEarlier: index > 0,
+      canMoveLater: index < props.chain.steps.length - 1,
+      phone: props.layout.mode === 'phone',
       label: transformation?.label ?? step.transformationId,
       fields: transformation?.fields ?? [],
       values: step.values,
@@ -167,7 +172,7 @@ function onMoveEnd({ viewport }: { viewport: Viewport }) {
 }
 
 // Pans to a node, keeping the zoom, and moves focus to it.
-async function reveal(id: string) {
+async function reveal(id: string, nodeOnly = false) {
   // Gives up quietly after half a second; the fallbacks below cover an unmeasured node.
   await until(() => getNode(id)?.measured?.width).toBeTruthy({ timeout: 500 })
   const node = getNode(id)
@@ -180,14 +185,44 @@ async function reveal(id: string) {
   })
   const element = document.querySelector<HTMLElement>(`.vue-flow__node[data-id="${id}"]`)
   const firstField = element?.querySelector<HTMLElement>('.field input, .field select')
-  if (firstField) {
+  if (firstField && !nodeOnly) {
     firstField.focus({ preventScroll: true })
   } else {
     element?.focus({ preventScroll: true })
   }
 }
 
-defineExpose({ reveal })
+function focusedStep(event: KeyboardEvent) {
+  const target = event.target
+  return target instanceof HTMLElement && target === document.activeElement &&
+    target.matches('.vue-flow__node-step') ? target.dataset.id : undefined
+}
+
+function onKeydown(event: KeyboardEvent) {
+  const id = focusedStep(event)
+  if (id && event.key === 'Delete') {
+    event.preventDefault()
+    emit('delete-step', id)
+  }
+}
+
+function onKeyup(event: KeyboardEvent) {
+  const target = event.target
+  if (!(target instanceof HTMLElement) || target !== document.activeElement ||
+      !target.matches('.vue-flow__node') || !event.key.startsWith('Arrow')) return
+  const node = getNode(target.dataset.id ?? '')
+  if (node) emit('update:positions', { [node.id]: { ...node.position } })
+}
+
+function retainStepFocus(id: string) {
+  nextTick(() => {
+    if (!(document.activeElement instanceof HTMLButtonElement) || document.activeElement.disabled) {
+      document.querySelector<HTMLElement>(`.vue-flow__node[data-id="${id}"]`)?.focus({ preventScroll: true })
+    }
+  })
+}
+
+defineExpose({ reveal, retainStepFocus })
 </script>
 
 <template>
@@ -202,6 +237,8 @@ defineExpose({ reveal })
     :nodes-connectable="false"
     :min-zoom="0.3"
     attribution-position="bottom-left"
+    @keydown="onKeydown"
+    @keyup="onKeyup"
     @node-drag-stop="onNodeDragStop"
     @move-end="onMoveEnd"
   >
@@ -232,6 +269,8 @@ defineExpose({ reveal })
         :source-position="ends.source"
         :target-position="ends.target"
         @update-field="onUpdateField"
+        @delete-step="emit('delete-step', $event)"
+        @move-step="(stepId, direction) => emit('move-step', stepId, direction)"
       />
     </template>
 

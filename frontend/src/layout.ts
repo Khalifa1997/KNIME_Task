@@ -13,7 +13,7 @@ export interface Viewport extends Point {
 
 export interface Layout {
   mode: LayoutMode
-  // Only nodes the user has dragged are here; every other node sits in its slot.
+  // Explicit positions from dragging, keyboard movement or swaps; others sit in their slots.
   positions: Record<string, Point>
   viewport: Viewport | null
 }

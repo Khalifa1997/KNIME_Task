@@ -149,3 +149,30 @@ describe('when the run cannot be carried out', () => {
     expect(runStatus(run, requestOf(chain)).dimmed).toBe(true)
   })
 })
+
+it('drops deleted ids from a pending response while retaining live results and Output', async () => {
+  const run = createRunState()
+  const chain = chainOf()
+  let finish!: (value: RunResponse) => void
+  const pending = executeRun(run, chain, () => new Promise((resolve) => { finish = resolve }))
+  chain.steps.splice(0, 1)
+  finish(response)
+  await pending
+  expect(run.results).toEqual({ [LOWER]: 'hello world' })
+  expect(run.output).toBe('hello world')
+  expect(status(run, chain)).toBe('Changed since the last run')
+})
+
+it('keeps pending results keyed by id through reorder and restores current status on undo', async () => {
+  const run = createRunState()
+  const chain = chainOf()
+  let finish!: (value: RunResponse) => void
+  const pending = executeRun(run, chain, () => new Promise((resolve) => { finish = resolve }))
+  chain.steps.reverse()
+  finish(response)
+  await pending
+  expect(run.results).toEqual({ [UPPER]: 'HELLO WORLD', [LOWER]: 'hello world' })
+  expect(status(run, chain)).toBe('Changed since the last run')
+  chain.steps.reverse()
+  expect(status(run, chain)).toBe('Up to date')
+})

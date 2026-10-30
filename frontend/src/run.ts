@@ -56,7 +56,10 @@ export async function executeRun(
     if (sequence !== run.sequence) return
     run.status = 'ok'
     run.output = response.output
-    run.results = Object.fromEntries(response.steps.map((step) => [step.id, step.output]))
+    const liveIds = new Set(chain.steps.map((step) => step.id))
+    run.results = Object.fromEntries(
+      response.steps.filter((step) => liveIds.has(step.id)).map((step) => [step.id, step.output]),
+    )
     run.sentRequest = JSON.stringify(request)
     run.detail = ''
   } catch (error) {

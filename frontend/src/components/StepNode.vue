@@ -6,6 +6,9 @@ import FieldInput from './FieldInput.vue'
 
 defineProps<{
   stepId: string
+  canMoveEarlier: boolean
+  canMoveLater: boolean
+  phone: boolean
   index: number
   label: string
   fields: FieldMeta[]
@@ -16,7 +19,11 @@ defineProps<{
   sourcePosition: Position
 }>()
 
-const emit = defineEmits<{ 'update-field': [stepId: string, name: string, value: FieldValue] }>()
+const emit = defineEmits<{
+  'update-field': [stepId: string, name: string, value: FieldValue]
+  'delete-step': [stepId: string]
+  'move-step': [stepId: string, direction: -1 | 1]
+}>()
 </script>
 
 <template>
@@ -38,6 +45,34 @@ const emit = defineEmits<{ 'update-field': [stepId: string, name: string, value:
       >{{ index + 1 }}</span>
       <span class="visually-hidden">Step {{ index + 1 }}: </span>{{ label }}
     </h2>
+    <div class="step-node__actions">
+      <button
+        type="button"
+        class="icon-btn nodrag nokey"
+        :aria-label="`Move Step ${index + 1}: ${label} earlier`"
+        :disabled="!canMoveEarlier"
+        @click="emit('move-step', stepId, -1)"
+      >
+        <span aria-hidden="true">{{ phone ? '↑' : '←' }}</span>
+      </button>
+      <button
+        type="button"
+        class="icon-btn nodrag nokey"
+        :aria-label="`Move Step ${index + 1}: ${label} later`"
+        :disabled="!canMoveLater"
+        @click="emit('move-step', stepId, 1)"
+      >
+        <span aria-hidden="true">{{ phone ? '↓' : '→' }}</span>
+      </button>
+      <button
+        type="button"
+        class="icon-btn nodrag nokey"
+        :aria-label="`Delete Step ${index + 1}: ${label}`"
+        @click="emit('delete-step', stepId)"
+      >
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
     <FieldInput
       v-for="field in fields"
       :key="field.name"
@@ -69,6 +104,12 @@ const emit = defineEmits<{ 'update-field': [stepId: string, name: string, value:
 </template>
 
 <style scoped>
+.step-node__actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-block: 0.5rem;
+}
+
 .step-node__index {
   display: inline-grid;
   place-items: center;
