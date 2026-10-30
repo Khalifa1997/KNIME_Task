@@ -21,6 +21,11 @@ public interface Transformation {
     /** The Fields this Transformation declares, in display order. */
     List<FieldSpec> fields();
 
+    /** Checks valid, typed and defaulted values before any Step is applied. */
+    default List<FieldProblem> check(FieldValues values) {
+        return List.of();
+    }
+
     /** Applies this Transformation using values already coerced and defaulted by the runner. */
     String apply(String input, FieldValues values);
 }
