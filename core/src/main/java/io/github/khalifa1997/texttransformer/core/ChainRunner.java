@@ -49,7 +49,12 @@ public final class ChainRunner {
         var text = inputText;
         for (int index = 0; index < prepared.size(); index++) {
             var step = prepared.get(index);
-            text = step.transformation().apply(text, step.values());
+            try {
+                text = step.transformation().apply(text, step.values());
+            } catch (PatternTimeoutException e) {
+                return new RunResult.Rejected(List.of(
+                        new StepError(index, null, ErrorCode.PATTERN_TIMEOUT, e.getMessage())));
+            }
             if (text.length() > limits.maxInputLength()) {
                 return new RunResult.Rejected(List.of(new StepError(index, null, ErrorCode.RESULT_TOO_LONG,
                         "Result is longer than " + FieldValidator.number(limits.maxInputLength()) + " characters.")));

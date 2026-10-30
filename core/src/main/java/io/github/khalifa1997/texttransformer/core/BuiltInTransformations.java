@@ -12,6 +12,8 @@ final class BuiltInTransformations {
                 new Replace(),
                 new Append(),
                 new Prepend(),
+                new Substring(),
+                new RegexReplace(),
                 new Uppercase(),
                 new Lowercase());
     }

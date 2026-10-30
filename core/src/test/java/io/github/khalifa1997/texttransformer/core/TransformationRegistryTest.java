@@ -17,12 +17,14 @@ class TransformationRegistryTest {
                         tuple("replace", "Replace", "Replaces every occurrence of some text with other text."),
                         tuple("append", "Append", "Adds text to the end."),
                         tuple("prepend", "Prepend", "Adds text to the start."),
+                        tuple("substring", "Substring", "Keeps only part of the text, counted in characters from 0."),
+                        tuple("regex", "Regex replace", "Replaces every match of a regular expression."),
                         tuple("uppercase", "Uppercase", "Converts the text to upper case."),
                         tuple("lowercase", "Lowercase", "Converts the text to lower case."));
     }
 
     @Test
-    void declaresTheFieldsOfReplaceAppendAndPrepend() {
+    void declaresTheFieldsOfEveryFieldedTransformation() {
         assertThat(registry.all())
                 .flatExtracting(t -> t.fields().stream()
                         .map(f -> tuple(t.id(), f.name(), f.label(), f.type(), f.required(), f.defaultValue()))
@@ -31,7 +33,12 @@ class TransformationRegistryTest {
                         tuple("replace", "search", "Search", FieldSpec.Type.TEXT, true, null),
                         tuple("replace", "replacement", "Replacement", FieldSpec.Type.TEXT, false, ""),
                         tuple("append", "text", "Text", FieldSpec.Type.TEXT, false, ""),
-                        tuple("prepend", "text", "Text", FieldSpec.Type.TEXT, false, ""));
+                        tuple("prepend", "text", "Text", FieldSpec.Type.TEXT, false, ""),
+                        tuple("substring", "start", "Start", FieldSpec.Type.INTEGER, true, 0),
+                        tuple("substring", "end", "End", FieldSpec.Type.INTEGER, false, null),
+                        tuple("regex", "pattern", "Pattern", FieldSpec.Type.TEXT, true, null),
+                        tuple("regex", "replacement", "Replacement", FieldSpec.Type.TEXT, false, ""),
+                        tuple("regex", "ignoreCase", "Ignore case", FieldSpec.Type.BOOLEAN, false, false));
     }
 
     @Test
