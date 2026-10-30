@@ -7,6 +7,7 @@ import type { Metadata } from './api/types'
 import ChainCanvas from './components/ChainCanvas.vue'
 import { INPUT_ID, PHONE_QUERY, slot, type FocusRequest, type Layout, type Point } from './layout'
 import { createRunState, executeRun, requestOf, runStatus, type Chain } from './run'
+import { hasStoredSession, readSession, restoreSession, useSessionSaving } from './session'
 
 const metadata = ref<Metadata | null>(null)
 const phase = ref<'loading' | 'metadata-error' | 'ready'>('loading')
@@ -20,14 +21,18 @@ async function loadMetadata() {
   metadataLoading = true
   phase.value = 'loading'
   metadataReason.value = ''
-  try {
-    // Presence only; saving and restoring belong to later stages.
-    hasSavedSession.value = sessionStorage.getItem('text-transformer.session') !== null
-  } catch {
-    hasSavedSession.value = false
-  }
+  const saved = readSession()
+  hasSavedSession.value = hasStoredSession()
   try {
     metadata.value = await fetchMetadata()
+    // Restoring brings back the work only; the run status stays Not run yet.
+    if (saved) {
+      const restored = restoreSession(saved, metadata.value, layout.mode)
+      chain.inputText = restored.inputText
+      chain.steps = restored.steps
+      layout.positions = restored.positions
+      layout.viewport = restored.viewport
+    }
     phase.value = 'ready'
   } catch (error) {
     metadataReason.value = error instanceof Error ? error.message : 'Something went wrong.'
@@ -44,6 +49,7 @@ const layout = reactive<Layout>({
   viewport: null,
 })
 const run = reactive(createRunState())
+const { saveFailed } = useSessionSaving({ chain, layout, metadata, phase })
 const focusRequest = ref<FocusRequest | null>(null)
 const activeElement = useActiveElement()
 
@@ -240,6 +246,13 @@ onKeyStroke('Enter', (event) => {
     >
       {{ announcement }}
     </div>
+    <p
+      v-if="saveFailed"
+      class="banner"
+      role="status"
+    >
+      Your changes couldn't be saved and may not survive a reload. You can keep editing.
+    </p>
     <main class="workspace">
       <p
         v-if="phase === 'loading'"
@@ -295,8 +308,8 @@ onKeyStroke('Enter', (event) => {
 
 <style scoped>
 .app {
-  display: grid;
-  grid-template: auto 1fr / minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   height: 100dvh;
 }
 
@@ -355,6 +368,7 @@ onKeyStroke('Enter', (event) => {
 
 .workspace {
   display: grid;
+  flex: 1;
   min-height: 0;
 }
 

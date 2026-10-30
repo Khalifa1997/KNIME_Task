@@ -47,19 +47,22 @@ test('metadata gates the workspace, preserves focus and saved work, and retries 
   expect(posts).toBe(0)
   const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
   expect(scan.violations).toEqual([])
+  expect(await page.evaluate(() => sessionStorage.getItem('text-transformer.session'))).toBe('untouched saved work')
   await alert.getByRole('button', { name: 'Retry' }).click()
   await expect(page.getByRole('status')).toHaveText('Loading Transformations…')
   await expect(alert).toHaveCount(0)
   await expect(input).toHaveCount(0)
   await expect(palette).toHaveCount(0)
   await page.keyboard.press('Meta+Enter')
+  expect(await page.evaluate(() => sessionStorage.getItem('text-transformer.session'))).toBe('untouched saved work')
   retry.release()
   await expect(input).toBeVisible()
   await expect(page.getByRole('group', { name: 'Output', exact: true })).toBeVisible()
   await expect(palette).toBeVisible()
   expect(gets).toBe(2)
   expect(posts).toBe(0)
-  expect(await page.evaluate(() => sessionStorage.getItem('text-transformer.session'))).toBe('untouched saved work')
+  // Reaching ready replaces the unreadable snapshot with a valid one.
+  await expect.poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem('text-transformer.session') ?? '{}').schemaVersion)).toBe(1)
 })
 
 test('storage access failure does not prevent ready', async ({ page }) => {
