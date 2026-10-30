@@ -4,10 +4,13 @@ import { describe, expect, it, vi } from 'vitest'
 import type { RunRequest, RunResponse } from '../api/types'
 import { createRunState, executeRun, requestOf, runStatus, type Chain } from '../run'
 
-const problem = { ...fixture, type: 'about:blank', status: 422, title: 'Chain could not run' } as const
-
 const UPPER = '3f2b8c1e-6a4d-4e0b-9d57-1c2a7e5f9b01'
 const LOWER = '8d1e4a7c-2b95-4c36-a0f8-5e9d3b6c7a02'
+
+const problem = {
+  ...fixture, type: 'about:blank', status: 422, title: 'Chain could not run',
+  errors: fixture.errors.map((error, index) => ({ ...error, stepId: index === 0 ? UPPER : LOWER })),
+} as const
 
 function chainOf(inputText = 'Hello World'): Chain {
   return {
@@ -219,4 +222,19 @@ describe('Step and Input rejection', () => {
     await pending
     expect(run).toEqual(before)
   })
+})
+
+it('prunes deleted Step errors from a pending rejection but retains Input and live Step errors through reorder', async () => {
+  const run = createRunState()
+  const chain = chainOf()
+  const inputError = { stepId: null, field: null, code: 'input-too-long', detail: 'Input is too long.' }
+  let reject!: (reason: RunRejected) => void
+  const pending = executeRun(run, chain, () => new Promise((_resolve, fail) => { reject = fail }))
+  chain.steps.reverse()
+  chain.steps = chain.steps.filter((step) => step.id !== UPPER)
+  reject(new RunRejected({ ...problem, errors: [...problem.errors, inputError] }))
+  await pending
+  expect(run.errors).toEqual([problem.errors[1], inputError])
+  expect(run.sentRequest).toBe(JSON.stringify(requestOf(chainOf())))
+  expect(run.detail).toBe(problem.detail)
 })

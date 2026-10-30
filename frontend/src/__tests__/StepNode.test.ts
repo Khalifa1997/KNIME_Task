@@ -56,6 +56,7 @@ it('keeps the normal card and renders all whole-Step and Field details verbatim'
   const wrapper = mount(StepNode, {
     props: {
       stepId: 'broken', index: 0, label: transformation.label,
+      canMoveEarlier: false, canMoveLater: false, phone: false,
       fields: transformation.fields as FieldMeta[], values: {}, result: undefined, dimmed: false,
       invalid: true, wholeStepErrors: ['Whole Step one.', 'Whole Step two.'],
       fieldErrors: { search: ['Field one.', 'Field two.'] },

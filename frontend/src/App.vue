@@ -83,6 +83,7 @@ function deleteStep(id: string) {
   chain.steps.splice(index, 1)
   delete layout.positions[id]
   delete run.results[id]
+  run.errors = run.errors.filter((error) => error.stepId !== id)
   const previous = chain.steps[index - 1]
   const next = chain.steps[index]
   announce(`Deleted ${label}. ${previous ? `Step ${index}: ${stepLabel(previous)}` : 'Input text'} now leads into ${next ? `Step ${index + 1}: ${stepLabel(next)}` : 'Output'}.`)

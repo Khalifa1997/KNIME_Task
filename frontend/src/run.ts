@@ -70,7 +70,8 @@ export async function executeRun(
     if (sequence !== run.sequence) return
     if (error instanceof RunRejected) {
       run.status = 'rejected'
-      run.errors = error.problem.errors
+      const liveIds = new Set(chain.steps.map((step) => step.id))
+      run.errors = error.problem.errors.filter((item) => item.stepId === null || liveIds.has(item.stepId))
       run.detail = error.problem.detail
       run.output = ''
       run.results = {}
