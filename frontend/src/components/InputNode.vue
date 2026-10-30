@@ -5,6 +5,8 @@ import { INPUT_ID, titleIdOf } from '../layout'
 
 const props = defineProps<{
   errors: string[]
+  suppressErrors?: boolean
+  dimmed?: boolean
   text: string
   maxInputLength: number
   sourcePosition: Position
@@ -26,7 +28,7 @@ function onInput(event: Event) {
   <!-- Vue Flow's node wrapper is the group, named by this node's heading. -->
   <div
     class="node node--io"
-    :class="{ 'node--invalid': errors.length > 0 }"
+    :class="{ 'node--invalid': errors.length > 0 && !suppressErrors }"
   >
     <h2
       :id="titleIdOf(INPUT_ID)"
@@ -56,6 +58,7 @@ function onInput(event: Event) {
       v-if="errors.length"
       id="input-errors"
       class="error-messages"
+      :class="{ 'is-dimmed': dimmed }"
     >
       <p
         v-for="(message, index) in errors"

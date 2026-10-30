@@ -31,11 +31,7 @@ class ChainController {
     }
 
     @PostMapping("/api/chain/run")
-<<<<<<< HEAD
-    RunResponse run(@Valid @RequestBody RunRequest request) {
-=======
-    ResponseEntity<?> run(@RequestBody RunRequest request) {
->>>>>>> f63e3ac (feat(app): map Chain rejections to strict 422 contracts)
+    ResponseEntity<?> run(@Valid @RequestBody RunRequest request) {
         var steps = request.steps().stream()
                 .map(step -> new StepInput(step.transformationId(), step.values()))
                 .toList();

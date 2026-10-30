@@ -41,26 +41,43 @@ function isRunProblem(body: unknown): body is RunProblem {
     })
 }
 
+export type RunFailureKind = 'network' | 'server' | 'unexpected'
+
+export class RunFailure extends Error {
+  constructor(readonly kind: RunFailureKind) {
+    super(kind === 'network' ? "Couldn't reach the server." : kind === 'server' ? 'The server had a problem.' : 'Something went wrong.')
+    this.name = 'RunFailure'
+  }
+}
+
 export async function postRun(request: RunRequest): Promise<RunResponse> {
-  const response = await fetch('/api/chain/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-    signal: AbortSignal.timeout(RUN_TIMEOUT_MS),
-  })
+  const signal = AbortSignal.timeout(RUN_TIMEOUT_MS)
+  let response: Response
+  try {
+    response = await fetch('/api/chain/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+      signal,
+    })
+  } catch {
+    throw new RunFailure('network')
+  }
+  if (response.status === 500) throw new RunFailure('server')
+  if (response.status !== 200 && response.status !== 422) throw new RunFailure('unexpected')
+  let body: unknown
+  try {
+    body = await response.json()
+  } catch (error) {
+    const aborted = signal.aborted || (error instanceof DOMException && (error.name === 'AbortError' || error.name === 'TimeoutError'))
+    throw new RunFailure(aborted ? 'network' : 'unexpected')
+  }
   if (response.status === 422) {
-    const body: unknown = await response.json()
     if (response.headers.get('content-type')?.split(';')[0] === 'application/problem+json' && isRunProblem(body)) {
       throw new RunRejected(body)
     }
-    throw new Error('POST /api/chain/run returned an unexpected body')
+    throw new RunFailure('unexpected')
   }
-  if (!response.ok) {
-    throw new Error(`POST /api/chain/run failed with ${response.status}`)
-  }
-  const body: unknown = await response.json()
-  if (!isRunResponse(body)) {
-    throw new Error('POST /api/chain/run returned an unexpected body')
-  }
+  if (!isRunResponse(body)) throw new RunFailure('unexpected')
   return body
 }

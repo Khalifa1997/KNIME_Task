@@ -1,6 +1,6 @@
-import { RunRejected } from '../api/run'
+import { RunFailure, RunRejected } from '../api/run'
 import fixture from '../../../contract/post-chain-run.two-broken-steps.422.json'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RunRequest, RunResponse } from '../api/types'
 import { createRunState, executeRun, requestOf, runStatus, type Chain } from '../run'
 
@@ -149,7 +149,7 @@ describe('when the run cannot be carried out', () => {
     })
 
     expect(run.results).toEqual({ [UPPER]: 'HELLO WORLD', [LOWER]: 'hello world' })
-    expect(status(run, chain)).toBe('Something went wrong.')
+    expect(status(run, chain)).toBe('Something went wrong. Try again')
     expect(runStatus(run, requestOf(chain)).dimmed).toBe(true)
   })
 })
@@ -191,5 +191,70 @@ describe('Step and Input rejection', () => {
     finish()
     await pending
     expect(run).toEqual(before)
+  })
+})
+
+
+afterEach(() => vi.useRealTimers())
+
+describe('Run failure lifecycle', () => {
+  it.each(['network', 'server', 'unexpected'] as const)('retains prior data for %s without declaring it current', async (kind) => {
+    const run = createRunState()
+    const chain = chainOf()
+    await executeRun(run, chain, async () => response)
+    const snapshot = run.sentRequest
+    await executeRun(run, chain, async () => { throw new RunFailure(kind) })
+    expect(run.output).toBe(response.output)
+    expect(run.results[UPPER]).toBe('HELLO WORLD')
+    expect(run.sentRequest).toBe(snapshot)
+    expect(status(run, chain)).toBe(new RunFailure(kind).message + ' Try again')
+    expect(runStatus(run, requestOf(chain)).dimmed).toBe(true)
+    await executeRun(run, chain, async () => { throw new RunRejected(problem) })
+    await executeRun(run, chain, async () => { throw new RunFailure(kind) })
+    expect(run.errors).toEqual(problem.errors)
+    expect(run.status).toBe('failed')
+  })
+
+  it('announces slow at exactly five seconds, resets and clears every completed timer', async () => {
+    vi.useFakeTimers()
+    const run = createRunState()
+    let finish!: (value: RunResponse) => void
+    const pending = executeRun(run, chainOf(), () => new Promise(resolve => { finish = resolve }))
+    vi.advanceTimersByTime(4_999)
+    expect(status(run, chainOf())).toBe('Running…')
+    vi.advanceTimersByTime(1)
+    expect(status(run, chainOf())).toBe('Still running…')
+    finish(response)
+    await pending
+    expect(vi.getTimerCount()).toBe(0)
+    const earlyFailure = executeRun(run, chainOf(), async () => { throw new RunFailure('network') })
+    expect(status(run, chainOf())).toBe('Running…')
+    await earlyFailure
+    expect(vi.getTimerCount()).toBe(0)
+    await executeRun(run, chainOf(), async () => response)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('a superseded timer and finally cannot mutate or cancel the newer timer', async () => {
+    vi.useFakeTimers()
+    const run = createRunState()
+    let finishOld!: (value: RunResponse) => void
+    let finishNew!: (value: RunResponse) => void
+    const old = executeRun(run, chainOf(), () => new Promise(resolve => { finishOld = resolve }))
+    vi.advanceTimersByTime(1_000)
+    run.status = 'idle'
+    const newer = executeRun(run, chainOf(), () => new Promise(resolve => { finishNew = resolve }))
+    vi.advanceTimersByTime(4_000)
+    expect(run.slow).toBe(false)
+    finishOld(response)
+    await old
+    expect(run.status).toBe('running')
+    expect(vi.getTimerCount()).toBe(1)
+    vi.advanceTimersByTime(1_000)
+    expect(run.slow).toBe(true)
+    finishNew(response)
+    await newer
+    expect(run.slow).toBe(false)
+    expect(vi.getTimerCount()).toBe(0)
   })
 })
