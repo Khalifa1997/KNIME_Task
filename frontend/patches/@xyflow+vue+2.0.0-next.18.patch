@@ -1,0 +1,27 @@
+diff --git a/node_modules/@xyflow/vue/dist/index.mjs b/node_modules/@xyflow/vue/dist/index.mjs
+index 9af6265..2b3411a 100644
+--- a/node_modules/@xyflow/vue/dist/index.mjs
++++ b/node_modules/@xyflow/vue/dist/index.mjs
+@@ -5832,11 +5832,11 @@ const NodeWrapper = defineComponent({
+ 		const instance = getCurrentInstance();
+ 		const updateNodePositions = useUpdateNodePositions();
+ 		const internalNode = computed(() => getInternalNode(props.id));
+-		const isDraggable = toRef(() => {
++		const isDraggable = computed(() => {
+ 			const node = internalNode.value;
+ 			return !node || typeof node.draggable === "undefined" ? store.nodesDraggable : node.draggable;
+ 		});
+-		const isSelectable = toRef(() => {
++		const isSelectable = computed(() => {
+ 			const node = internalNode.value;
+ 			return !node || typeof node.selectable === "undefined" ? store.elementsSelectable : node.selectable;
+ 		});
+@@ -5863,7 +5863,7 @@ const NodeWrapper = defineComponent({
+ 			el: nodeElement,
+ 			disabled: () => !isDraggable.value,
+ 			selectable: isSelectable,
+-			dragHandle: () => internalNode.value?.dragHandle,
++			dragHandle: computed(() => internalNode.value?.dragHandle),
+ 			onStart(event) {
+ 				emits.nodeDragStart(event);
+ 			},

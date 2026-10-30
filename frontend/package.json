@@ -13,7 +13,8 @@
     "lint:fix": "eslint . --fix && stylelint \"src/**/*.{css,vue}\" --fix",
     "test": "vitest run --passWithNoTests",
     "test:unit": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "postinstall": "patch-package --error-on-fail"
   },
   "dependencies": {
     "@vueuse/core": "^14.4.0",
@@ -38,6 +39,7 @@
     "jiti": "^2.7.0",
     "jsdom": "^30.1.3",
     "npm-run-all2": "^9.0.4",
+    "patch-package": "^8.0.1",
     "postcss-html": "^2.0.0",
     "stylelint": "^17.16.0",
     "typescript": "~6.0.3",
