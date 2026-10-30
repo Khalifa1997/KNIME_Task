@@ -1,4 +1,4 @@
-import { RunRejected } from './api/run'
+import { RunFailure, RunRejected } from './api/run'
 // Running a Chain, as plain state that App.vue holds and these functions update.
 import type { FieldValue, RunError, RunRequest, RunResponse } from './api/types'
 
@@ -9,6 +9,7 @@ export interface Chain {
 
 export interface RunState {
   status: 'idle' | 'running' | 'ok' | 'rejected' | 'failed'
+  slow: boolean
   // Undefined until a successful run, or after a rejection clears previous Output.
   output: string | undefined
   results: Record<string, string>
@@ -21,7 +22,7 @@ export interface RunState {
 }
 
 export function createRunState(): RunState {
-  return { status: 'idle', output: undefined, results: {}, errors: [], detail: '', sentRequest: null, sequence: 0 }
+  return { status: 'idle', slow: false, output: undefined, results: {}, errors: [], detail: '', sentRequest: null, sequence: 0 }
 }
 
 export function requestOf(chain: Chain): RunRequest {
@@ -36,10 +37,10 @@ export function requestOf(chain: Chain): RunRequest {
 }
 
 export function runStatus(run: RunState, current: RunRequest): { text: string; dimmed: boolean } {
-  if (run.status === 'running') return { text: 'Running…', dimmed: true }
+  if (run.status === 'running') return { text: run.slow ? 'Still running…' : 'Running…', dimmed: true }
   if (run.status === 'idle') return { text: 'Not run yet', dimmed: false }
   if (run.status === 'rejected') return { text: run.detail, dimmed: false }
-  if (run.status === 'failed') return { text: run.detail, dimmed: true }
+  if (run.status === 'failed') return { text: run.detail + ' Try again', dimmed: true }
   const changed = JSON.stringify(current) !== run.sentRequest
   return changed
     ? { text: 'Changed since the last run', dimmed: true }
@@ -55,6 +56,10 @@ export async function executeRun(
   const request = requestOf(chain)
   const sequence = ++run.sequence
   run.status = 'running'
+  run.slow = false
+  const slowTimer = setTimeout(() => {
+    if (sequence === run.sequence && run.status === 'running') run.slow = true
+  }, 5_000)
   try {
     const response = await send(request)
     if (sequence !== run.sequence) return
@@ -79,9 +84,10 @@ export async function executeRun(
       run.sentRequest = JSON.stringify(request)
       return
     }
-    console.error(error)
-    // Failure messages by cause come with the Run failure work; the previous results stay.
     run.status = 'failed'
-    run.detail = 'Something went wrong.'
+    run.detail = error instanceof RunFailure ? error.message : 'Something went wrong.'
+  } finally {
+    clearTimeout(slowTimer)
+    if (sequence === run.sequence) run.slow = false
   }
 }

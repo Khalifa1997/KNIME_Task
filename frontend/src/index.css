@@ -272,3 +272,9 @@ textarea {
 .status[data-state='rejected'] .status__dot {
   background: currentColor;
 }
+
+.errors-dimmed .error-messages,
+.error-messages.is-dimmed {
+  color: var(--text);
+  opacity: 0.7;
+}

@@ -2,11 +2,11 @@ import { test as base, expect, type Response } from '@playwright/test'
 
 type DomainRejectionAssertion = (response: Response, expectedBody: unknown) => Promise<void>
 
-// Strict by default. Flows may explicitly assert an expected domain response; only the matching
-// browser-generated resource error is then allowed, once per asserted response.
+// Only browser resource errors backed by an asserted HTTP response are consumed, once each.
 export const test = base.extend<{
   consoleErrors: string[]
   expectDomainRejection: DomainRejectionAssertion
+  expectHttpFailure: (response: Response, status: 400 | 500, expectedBody: unknown) => Promise<void>
 }>({
   consoleErrors: [
     async ({ page }, use) => {
@@ -22,6 +22,26 @@ export const test = base.extend<{
     },
     { auto: true },
   ],
+  expectHttpFailure: async ({ consoleErrors }, use) => {
+    const expected: { url: string; status: number }[] = []
+    await use(async (response, status, expectedBody) => {
+      expect(response.request().method()).toBe('POST')
+      expect(new URL(response.url()).pathname).toBe('/api/chain/run')
+      expect(response.status()).toBe(status)
+      expect(response.headers()['content-type']).toContain('application/problem+json')
+      expect(await response.json()).toEqual(expectedBody)
+      expected.push({ url: response.url(), status })
+    })
+    for (const { url, status } of expected) {
+      const index = consoleErrors.findIndex(entry => {
+        try {
+          const message = JSON.parse(entry) as { text: string; url: string }
+          return message.url === url && new RegExp('^Failed to load resource: the server responded with a status of ' + status + ' \\([^)]*\\)$').test(message.text)
+        } catch { return false }
+      })
+      if (index !== -1) consoleErrors.splice(index, 1)
+    }
+  },
   expectDomainRejection: async ({ consoleErrors }, use) => {
     const expectedUrls: string[] = []
     await use(async (response, expectedBody) => {

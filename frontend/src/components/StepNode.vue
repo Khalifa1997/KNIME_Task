@@ -33,7 +33,7 @@ const emit = defineEmits<{
   <!-- Vue Flow's node wrapper is the group, named by this node's heading. -->
   <div
     class="node"
-    :class="{ 'node--invalid': invalid }"
+    :class="{ 'node--invalid': invalid, 'errors-dimmed': dimmed }"
   >
     <!-- Edges are drawn for the user, never by them, so the handles are only decoration. -->
     <Handle

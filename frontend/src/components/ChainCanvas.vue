@@ -72,7 +72,7 @@ const errorPropsByStepId = computed(() => Object.fromEntries(
     for (const error of errors) {
       if (error.field !== null) (fieldErrors[error.field] ??= []).push(error.detail)
     }
-    return [id, { invalid: true, fieldErrors, wholeStepErrors: errors.filter((error) => error.field === null).map((error) => error.detail) }]
+    return [id, { invalid: props.run.status !== 'failed', fieldErrors, wholeStepErrors: errors.filter((error) => error.field === null).map((error) => error.detail) }]
   }),
 ))
 
@@ -277,6 +277,8 @@ defineExpose({ reveal, retainStepFocus })
       <InputNode
         :text="chain.inputText"
         :errors="inputErrors"
+        :suppress-errors="run.status === 'failed'"
+        :dimmed="dimmed"
         :max-input-length="maxInputLength"
         :source-position="ends.source"
         @update:text="emit('update:inputText', $event)"

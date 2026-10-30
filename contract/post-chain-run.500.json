@@ -1,0 +1,6 @@
+{
+  "title": "Internal Server Error",
+  "status": 500,
+  "detail": "Something went wrong.",
+  "instance": "/api/chain/run"
+}
