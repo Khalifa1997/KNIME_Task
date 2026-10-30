@@ -253,3 +253,22 @@ textarea {
 .status[data-state='failed'] .status__dot {
   background: currentColor;
 }
+
+.node--invalid {
+  box-shadow: 0 0 0 2px var(--danger-border), 0 0 1rem 0.25rem rgb(229 72 77 / 30%);
+}
+
+.error-messages {
+  color: var(--danger-text);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.status[data-state='rejected'] {
+  color: #ff8a80;
+  font-weight: 700;
+}
+
+.status[data-state='rejected'] .status__dot {
+  background: currentColor;
+}

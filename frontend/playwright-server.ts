@@ -1,22 +1,21 @@
 import { join } from 'node:path'
 import process from 'node:process'
 
-// One port drives the jar, readiness probe and browser; never reuse an unrelated server.
-export function playwrightServer(defaultPort: number) {
-  const value = process.env.E2E_PORT ?? String(defaultPort)
-  if (!/^\d+$/.test(value) || Number(value) < 1024 || Number(value) > 65535) {
+// One managed jar per run; never attach evidence to another lane's server.
+export function jarServer(defaultPort: number) {
+  const rawPort = process.env.E2E_PORT ?? String(defaultPort)
+  if (!/^\d+$/.test(rawPort) || Number(rawPort) < 1024 || Number(rawPort) > 65535) {
     throw new Error('E2E_PORT must be an integer between 1024 and 65535')
   }
-  const port = Number(value)
-  const baseURL = `http://localhost:${port}`
+  const baseURL = `http://localhost:${Number(rawPort)}`
   if (process.env.BASE_URL && process.env.BASE_URL !== baseURL) {
-    throw new Error('Use E2E_PORT instead of an incompatible BASE_URL')
+    throw new Error('BASE_URL must match the managed E2E_PORT origin')
   }
   const java = process.env.JAVA_HOME ? join(process.env.JAVA_HOME, 'bin', 'java') : 'java'
   return {
     baseURL,
     webServer: {
-      command: `"${java}" -jar ../app/target/app.jar --server.port=${port}`,
+      command: `"${java}" -jar ../app/target/app.jar --server.port=${Number(rawPort)}`,
       url: `${baseURL}/api/transformations`,
       reuseExistingServer: false,
       timeout: 60 * 1000,

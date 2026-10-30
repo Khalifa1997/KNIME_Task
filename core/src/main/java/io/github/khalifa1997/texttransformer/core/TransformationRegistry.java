@@ -8,7 +8,7 @@ public final class TransformationRegistry {
 
     private final List<Transformation> transformations;
 
-    private TransformationRegistry(List<Transformation> transformations) {
+    TransformationRegistry(List<Transformation> transformations) {
         this.transformations = List.copyOf(transformations);
     }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useMediaQuery } from '@vueuse/core'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { onKeyStroke, useMediaQuery } from '@vueuse/core'
 import { fetchMetadata } from './api/metadata'
 import { postRun } from './api/run'
 import type { Metadata } from './api/types'
@@ -46,20 +46,9 @@ const layout = reactive<Layout>({
 const run = reactive(createRunState())
 const canvas = ref<InstanceType<typeof ChainCanvas> | null>(null)
 
-function onRunShortcut(event: KeyboardEvent) {
-  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-    event.preventDefault()
-    startRun()
-  }
-}
-
 onMounted(() => {
-  // Capture before Vue Flow handles node keyboard events, including Fields in a Step.
-  window.addEventListener('keydown', onRunShortcut, true)
   void loadMetadata()
 })
-
-onBeforeUnmount(() => window.removeEventListener('keydown', onRunShortcut, true))
 
 // Crossing the breakpoint keeps the Chain but lays it out afresh for the new mode.
 watch(isPhone, (phone) => {
@@ -92,6 +81,13 @@ function startRun() {
   void executeRun(run, chain, postRun)
 }
 
+// Capture before Vue Flow handles node keys, including inside a Step's Fields.
+onKeyStroke('Enter', (event) => {
+  if (event.ctrlKey || event.metaKey) {
+    event.preventDefault()
+    startRun()
+  }
+}, { target: window, capture: true })
 </script>
 
 <template>

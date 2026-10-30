@@ -1,9 +1,9 @@
-import { playwrightServer } from './playwright-server'
+import { jarServer } from './playwright-server'
 import process from 'node:process'
 import { defineConfig, devices } from '@playwright/test'
 
 // End-to-end tests run against the real jar: build it first with `./mvnw package`.
-const server = playwrightServer(8181)
+const { baseURL, webServer } = jarServer(8181)
 
 export default defineConfig({
   testDir: './e2e',
@@ -12,7 +12,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   reporter: 'list',
   use: {
-    baseURL: server.baseURL,
+    baseURL,
     trace: 'retain-on-failure',
   },
   projects: [
@@ -26,5 +26,5 @@ export default defineConfig({
       use: { ...devices['Pixel 7'] },
     },
   ],
-  webServer: server.webServer,
+  webServer,
 })

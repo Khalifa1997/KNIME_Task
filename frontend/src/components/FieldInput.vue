@@ -6,11 +6,15 @@ const props = defineProps<{
   stepId: string
   field: FieldMeta
   value: FieldValue
+  errors?: string[]
 }>()
 
 const emit = defineEmits<{ 'update:value': [value: FieldValue] }>()
 
 const inputId = computed(() => `field-${props.stepId}-${props.field.name}`)
+
+const errorId = computed(() => `${inputId.value}-errors`)
+const hasErrors = computed(() => Boolean(props.errors?.length))
 
 function stopCanvasKey(event: KeyboardEvent) {
   if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) return
@@ -47,6 +51,8 @@ function onSelectInput(event: Event) {
     <input
       v-if="field.type === 'text'"
       :id="inputId"
+      :aria-invalid="hasErrors ? true : undefined"
+      :aria-describedby="hasErrors ? errorId : undefined"
       class="input nodrag nowheel nokey"
       type="text"
       :required="field.required"
@@ -57,6 +63,8 @@ function onSelectInput(event: Event) {
     <input
       v-else-if="field.type === 'integer'"
       :id="inputId"
+      :aria-invalid="hasErrors ? true : undefined"
+      :aria-describedby="hasErrors ? errorId : undefined"
       class="input nodrag nowheel nokey"
       type="number"
       :required="field.required"
@@ -69,6 +77,8 @@ function onSelectInput(event: Event) {
     <input
       v-else-if="field.type === 'boolean'"
       :id="inputId"
+      :aria-invalid="hasErrors ? true : undefined"
+      :aria-describedby="hasErrors ? errorId : undefined"
       class="checkbox nodrag nowheel nokey"
       type="checkbox"
       :required="field.required"
@@ -79,6 +89,8 @@ function onSelectInput(event: Event) {
     <select
       v-else
       :id="inputId"
+      :aria-invalid="hasErrors ? true : undefined"
+      :aria-describedby="hasErrors ? errorId : undefined"
       class="input nodrag nowheel nokey"
       :required="field.required"
       :value="value ?? ''"
@@ -93,5 +105,17 @@ function onSelectInput(event: Event) {
         {{ choice.label }}
       </option>
     </select>
+    <div
+      v-if="hasErrors"
+      :id="errorId"
+      class="error-messages"
+    >
+      <p
+        v-for="(message, index) in errors"
+        :key="index"
+      >
+        {{ message }}
+      </p>
+    </div>
   </div>
 </template>
