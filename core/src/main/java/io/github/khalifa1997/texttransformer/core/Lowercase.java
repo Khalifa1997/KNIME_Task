@@ -26,7 +26,7 @@ final class Lowercase implements Transformation {
     }
 
     @Override
-    public String apply(String input) {
+    public String apply(String input, FieldValues values) {
         // Locale.ROOT, so the result never depends on the server's locale (the Turkish-i problem).
         return input.toLowerCase(Locale.ROOT);
     }

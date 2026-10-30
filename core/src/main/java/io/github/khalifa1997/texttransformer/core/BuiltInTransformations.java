@@ -9,6 +9,9 @@ final class BuiltInTransformations {
 
     static List<Transformation> all() {
         return List.of(
+                new Replace(),
+                new Append(),
+                new Prepend(),
                 new Uppercase(),
                 new Lowercase());
     }

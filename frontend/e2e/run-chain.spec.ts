@@ -64,6 +64,33 @@ test('counts the Input text against the limit without cutting it off', async ({ 
   await expect(input).toHaveValue('x'.repeat(3001))
 })
 
+test('edits the Fields of a Replace Step and sees the changed Output', async ({ page }) => {
+  await page.goto('/')
+
+  const palette = page.getByRole('region', { name: 'Add Step' })
+  await page.getByRole('textbox', { name: 'Input text' }).fill('a-b-a')
+  await palette.getByRole('button', { name: 'Replace' }).click()
+
+  const step = page.getByRole('group', { name: 'Step 1: Replace' })
+  await step.getByRole('textbox', { name: 'Search' }).fill('a')
+  const replacement = step.getByRole('textbox', { name: 'Replacement' })
+  await replacement.fill('x')
+  const position = await step.getAttribute('style')
+  await replacement.press('ArrowLeft')
+  await replacement.press('ArrowRight')
+  await replacement.press('Space')
+  await replacement.press('Backspace')
+  await replacement.press('Delete')
+  await expect(replacement).toHaveValue('x')
+  await expect(step).toHaveAttribute('style', position ?? '')
+  // The global shortcut still runs from inside a Field.
+  await replacement.press('Control+Enter')
+
+  await expect(page.getByRole('status')).toHaveText('Up to date')
+  await expect(step).toContainText('x-b-x')
+  await expect(page.getByRole('group', { name: 'Output' })).toContainText('x-b-x')
+})
+
 test('has no WCAG 2.2 A or AA violations on the canvas with results', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('textbox', { name: 'Input text' }).fill('Hello')

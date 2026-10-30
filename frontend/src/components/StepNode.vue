@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { Handle, type Position } from '@xyflow/vue'
 import { titleIdOf } from '../layout'
+import type { FieldMeta, FieldValue } from '../api/types'
+import FieldInput from './FieldInput.vue'
 
 defineProps<{
   stepId: string
   index: number
   label: string
+  fields: FieldMeta[]
+  values: Record<string, FieldValue>
   result: string | undefined
   dimmed: boolean
   targetPosition: Position
   sourcePosition: Position
 }>()
+
+const emit = defineEmits<{ 'update-field': [stepId: string, name: string, value: FieldValue] }>()
 </script>
 
 <template>
@@ -32,6 +38,14 @@ defineProps<{
       >{{ index + 1 }}</span>
       <span class="visually-hidden">Step {{ index + 1 }}: </span>{{ label }}
     </h2>
+    <FieldInput
+      v-for="field in fields"
+      :key="field.name"
+      :step-id="stepId"
+      :field="field"
+      :value="values[field.name] ?? null"
+      @update:value="emit('update-field', stepId, field.name, $event)"
+    />
     <span class="step-node__result-label">Result</span>
     <p
       v-if="result !== undefined"

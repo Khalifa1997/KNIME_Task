@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { onKeyStroke, useMediaQuery } from '@vueuse/core'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import { fetchMetadata } from './api/metadata'
 import { postRun } from './api/run'
 import type { Metadata } from './api/types'
@@ -19,7 +19,16 @@ const layout = reactive<Layout>({
 const run = reactive(createRunState())
 const canvas = ref<InstanceType<typeof ChainCanvas> | null>(null)
 
+function onRunShortcut(event: KeyboardEvent) {
+  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault()
+    startRun()
+  }
+}
+
 onMounted(async () => {
+  // Capture before Vue Flow handles node keyboard events, including Fields in a Step.
+  window.addEventListener('keydown', onRunShortcut, true)
   try {
     metadata.value = await fetchMetadata()
   } catch (error) {
@@ -27,6 +36,8 @@ onMounted(async () => {
     console.error(error)
   }
 })
+
+onBeforeUnmount(() => window.removeEventListener('keydown', onRunShortcut, true))
 
 // Crossing the breakpoint keeps the Chain but lays it out afresh for the new mode.
 watch(isPhone, (phone) => {
@@ -58,13 +69,6 @@ function startRun() {
   void executeRun(run, chain, postRun)
 }
 
-// Ctrl/⌘+Enter runs the Chain from anywhere, including inside a Field.
-onKeyStroke('Enter', (event) => {
-  if (event.ctrlKey || event.metaKey) {
-    event.preventDefault()
-    startRun()
-  }
-})
 </script>
 
 <template>
@@ -145,6 +149,10 @@ onKeyStroke('Enter', (event) => {
         :run="run"
         :dimmed="status.dimmed"
         @update:input-text="chain.inputText = $event"
+        @update-field="(stepId, name, value) => {
+          const step = chain.steps.find((candidate) => candidate.id === stepId)
+          if (step) step.values[name] = value
+        }"
         @update:positions="layout.positions = { ...layout.positions, ...$event }"
         @update:viewport="layout.viewport = $event"
       />
