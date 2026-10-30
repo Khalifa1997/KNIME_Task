@@ -1,0 +1,32 @@
+{
+  "type": "about:blank",
+  "status": 422,
+  "title": "Chain could not run",
+  "detail": "4 problems stop the Chain from running.",
+  "errors": [
+    {
+      "stepId": null,
+      "field": null,
+      "code": "input-too-long",
+      "detail": "Input text is longer than 3,000 characters."
+    },
+    {
+      "stepId": "11111111-1111-4111-8111-111111111111",
+      "field": "search",
+      "code": "wrong-type",
+      "detail": "Search must be text."
+    },
+    {
+      "stepId": "11111111-1111-4111-8111-111111111111",
+      "field": "replacement",
+      "code": "wrong-type",
+      "detail": "Replacement must be text."
+    },
+    {
+      "stepId": "22222222-2222-4222-8222-222222222222",
+      "field": null,
+      "code": "unknown-transformation",
+      "detail": "Unknown Transformation \"titlecase\"."
+    }
+  ]
+}

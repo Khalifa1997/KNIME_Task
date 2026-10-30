@@ -1,0 +1,14 @@
+{
+  "type": "about:blank",
+  "status": 422,
+  "title": "Chain could not run",
+  "detail": "1 problem stops the Chain from running.",
+  "errors": [
+    {
+      "stepId": null,
+      "field": null,
+      "code": "too-many-steps",
+      "detail": "A Chain can have at most 30 Steps."
+    }
+  ]
+}

@@ -52,3 +52,18 @@ export interface RunResponse {
   output: string
   steps: { id: string; output: string }[]
 }
+
+export interface RunError {
+  stepId: string | null
+  field: string | null
+  code: string
+  detail: string
+}
+
+export interface RunProblem {
+  type: 'about:blank'
+  status: 422
+  title: 'Chain could not run'
+  detail: string
+  errors: RunError[]
+}

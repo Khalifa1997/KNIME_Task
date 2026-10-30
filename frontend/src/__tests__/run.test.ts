@@ -1,6 +1,10 @@
+import { RunRejected } from '../api/run'
+import fixture from '../../../contract/post-chain-run.two-broken-steps.422.json'
 import { describe, expect, it, vi } from 'vitest'
 import type { RunRequest, RunResponse } from '../api/types'
 import { createRunState, executeRun, requestOf, runStatus, type Chain } from '../run'
+
+const problem = { ...fixture, type: 'about:blank', status: 422, title: 'Chain could not run' } as const
 
 const UPPER = '3f2b8c1e-6a4d-4e0b-9d57-1c2a7e5f9b01'
 const LOWER = '8d1e4a7c-2b95-4c36-a0f8-5e9d3b6c7a02'
@@ -147,5 +151,45 @@ describe('when the run cannot be carried out', () => {
     expect(run.results).toEqual({ [UPPER]: 'HELLO WORLD', [LOWER]: 'hello world' })
     expect(status(run, chain)).toBe('Something went wrong.')
     expect(runStatus(run, requestOf(chain)).dimmed).toBe(true)
+  })
+})
+
+describe('Step and Input rejection', () => {
+  it('clears previews, replaces errors, records the sent snapshot and announces backend detail verbatim', async () => {
+    const run = createRunState()
+    const chain = chainOf()
+    await executeRun(run, chain, async () => response)
+    const logged = vi.spyOn(console, 'error')
+    await executeRun(run, chain, async () => { throw new RunRejected(problem) })
+    expect(logged).not.toHaveBeenCalled()
+    logged.mockRestore()
+    expect(run.status).toBe('rejected')
+    expect(run.results).toEqual({})
+    expect(run.output).toBe('')
+    expect(run.errors).toEqual(problem.errors)
+    expect(run.sentRequest).toBe(JSON.stringify(requestOf(chain)))
+    expect(status(run, chain)).toBe(problem.detail)
+    await executeRun(run, chain, async () => response)
+    expect(run.errors).toEqual([])
+  })
+  it('preserves errors and results on a non-422 failure', async () => {
+    const run = createRunState()
+    await executeRun(run, chainOf(), async () => { throw new RunRejected(problem) })
+    await executeRun(run, chainOf(), async () => { throw new Error('offline') })
+    expect(run.status).toBe('failed')
+    expect(run.errors).toEqual(problem.errors)
+    expect(run.results).toEqual({})
+  })
+  it.each(['success', 'rejection', 'failure'])('ignores superseded %s outcomes', async (outcome) => {
+    const run = createRunState()
+    let finish!: () => void
+    const pending = executeRun(run, chainOf(), () => new Promise((resolve, reject) => {
+      finish = () => outcome === 'success' ? resolve(response) : reject(outcome === 'rejection' ? new RunRejected(problem) : new Error('offline'))
+    }))
+    run.sequence++
+    const before = structuredClone(run)
+    finish()
+    await pending
+    expect(run).toEqual(before)
   })
 })
