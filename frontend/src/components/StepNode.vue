@@ -1,14 +1,20 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Handle, type Position } from '@xyflow/vue'
-import { titleIdOf } from '../layout'
+import { useFocusRequest } from '../nodeFocus'
+import { titleIdOf, type FocusRequest } from '../layout'
 import type { FieldMeta, FieldValue } from '../api/types'
 import FieldInput from './FieldInput.vue'
 
-defineProps<{
+const props = defineProps<{
+  focusRequest?: FocusRequest | null
   invalid: boolean
   wholeStepErrors: string[]
   fieldErrors: Record<string, string[]>
   stepId: string
+  canMoveEarlier: boolean
+  canMoveLater: boolean
+  phone: boolean
   index: number
   label: string
   fields: FieldMeta[]
@@ -19,12 +25,23 @@ defineProps<{
   sourcePosition: Position
 }>()
 
-const emit = defineEmits<{ 'update-field': [stepId: string, name: string, value: FieldValue] }>()
+const emit = defineEmits<{
+  'update-field': [stepId: string, name: string, value: FieldValue]
+  'delete-step': [stepId: string]
+  'move-step': [stepId: string, direction: -1 | 1]
+}>()
+
+// The first Field takes focus unless only the node was asked for.
+const fieldFocusRequest = computed(
+  () => (props.fields.length && !props.focusRequest?.nodeOnly ? props.focusRequest : null),
+)
+useFocusRequest('root', () => props.focusRequest, () => fieldFocusRequest.value !== null)
 </script>
 
 <template>
   <!-- Vue Flow's node wrapper is the group, named by this node's heading. -->
   <div
+    ref="root"
     class="node"
     :class="{ 'node--invalid': invalid, 'errors-dimmed': dimmed }"
   >
@@ -44,6 +61,34 @@ const emit = defineEmits<{ 'update-field': [stepId: string, name: string, value:
       >{{ index + 1 }}</span>
       <span class="visually-hidden">Step {{ index + 1 }}: </span>{{ label }}
     </h2>
+    <div class="step-node__actions">
+      <button
+        type="button"
+        class="icon-btn nodrag nokey"
+        :aria-label="`Move Step ${index + 1}: ${label} earlier`"
+        :disabled="!canMoveEarlier"
+        @click="emit('move-step', stepId, -1)"
+      >
+        <span aria-hidden="true">{{ phone ? '↑' : '←' }}</span>
+      </button>
+      <button
+        type="button"
+        class="icon-btn nodrag nokey"
+        :aria-label="`Move Step ${index + 1}: ${label} later`"
+        :disabled="!canMoveLater"
+        @click="emit('move-step', stepId, 1)"
+      >
+        <span aria-hidden="true">{{ phone ? '↓' : '→' }}</span>
+      </button>
+      <button
+        type="button"
+        class="icon-btn nodrag nokey"
+        :aria-label="`Delete Step ${index + 1}: ${label}`"
+        @click="emit('delete-step', stepId)"
+      >
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
     <div
       v-if="wholeStepErrors.length"
       class="error-messages"
@@ -56,8 +101,9 @@ const emit = defineEmits<{ 'update-field': [stepId: string, name: string, value:
       </p>
     </div>
     <FieldInput
-      v-for="field in fields"
+      v-for="(field, fieldIndex) in fields"
       :key="field.name"
+      :focus-request="fieldIndex === 0 ? fieldFocusRequest : null"
       :step-id="stepId"
       :field="field"
       :errors="fieldErrors[field.name]"
@@ -87,6 +133,12 @@ const emit = defineEmits<{ 'update-field': [stepId: string, name: string, value:
 </template>
 
 <style scoped>
+.step-node__actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-block: 0.5rem;
+}
+
 .step-node__index {
   display: inline-grid;
   place-items: center;

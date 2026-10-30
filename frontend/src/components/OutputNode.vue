@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import { Handle, type Position } from '@xyflow/vue'
-import { OUTPUT_ID, titleIdOf } from '../layout'
+import { useFocusRequest } from '../nodeFocus'
+import { OUTPUT_ID, titleIdOf, type FocusRequest } from '../layout'
 
-defineProps<{
+const props = defineProps<{
+  focusRequest?: FocusRequest | null
   // Undefined until a run has produced one.
   output: string | undefined
   dimmed: boolean
   targetPosition: Position
 }>()
+
+useFocusRequest('root', () => props.focusRequest)
 </script>
 
 <template>
   <!-- Vue Flow's node wrapper is the group, named by this node's heading. -->
-  <div class="node node--io">
+  <div
+    ref="root"
+    class="node node--io"
+  >
     <!-- Edges are drawn for the user, never by them, so the handles are only decoration. -->
     <Handle
       aria-hidden="true"

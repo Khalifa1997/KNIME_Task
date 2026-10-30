@@ -4,10 +4,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RunRequest, RunResponse } from '../api/types'
 import { createRunState, executeRun, requestOf, runStatus, type Chain } from '../run'
 
-const problem = { ...fixture, type: 'about:blank', status: 422, title: 'Chain could not run' } as const
-
 const UPPER = '3f2b8c1e-6a4d-4e0b-9d57-1c2a7e5f9b01'
 const LOWER = '8d1e4a7c-2b95-4c36-a0f8-5e9d3b6c7a02'
+
+const problem = {
+  ...fixture, type: 'about:blank', status: 422, title: 'Chain could not run',
+  errors: fixture.errors.map((error, index) => ({ ...error, stepId: index === 0 ? UPPER : LOWER })),
+} as const
 
 function chainOf(inputText = 'Hello World'): Chain {
   return {
@@ -154,6 +157,33 @@ describe('when the run cannot be carried out', () => {
   })
 })
 
+it('drops deleted ids from a pending response while retaining live results and Output', async () => {
+  const run = createRunState()
+  const chain = chainOf()
+  let finish!: (value: RunResponse) => void
+  const pending = executeRun(run, chain, () => new Promise((resolve) => { finish = resolve }))
+  chain.steps.splice(0, 1)
+  finish(response)
+  await pending
+  expect(run.results).toEqual({ [LOWER]: 'hello world' })
+  expect(run.output).toBe('hello world')
+  expect(status(run, chain)).toBe('Changed since the last run')
+})
+
+it('keeps pending results keyed by id through reorder and restores current status on undo', async () => {
+  const run = createRunState()
+  const chain = chainOf()
+  let finish!: (value: RunResponse) => void
+  const pending = executeRun(run, chain, () => new Promise((resolve) => { finish = resolve }))
+  chain.steps.reverse()
+  finish(response)
+  await pending
+  expect(run.results).toEqual({ [UPPER]: 'HELLO WORLD', [LOWER]: 'hello world' })
+  expect(status(run, chain)).toBe('Changed since the last run')
+  chain.steps.reverse()
+  expect(status(run, chain)).toBe('Up to date')
+})
+
 describe('Step and Input rejection', () => {
   it('clears previews, replaces errors, records the sent snapshot and announces backend detail verbatim', async () => {
     const run = createRunState()
@@ -165,7 +195,7 @@ describe('Step and Input rejection', () => {
     logged.mockRestore()
     expect(run.status).toBe('rejected')
     expect(run.results).toEqual({})
-    expect(run.output).toBe('')
+    expect(run.output).toBeUndefined()
     expect(run.errors).toEqual(problem.errors)
     expect(run.sentRequest).toBe(JSON.stringify(requestOf(chain)))
     expect(status(run, chain)).toBe(problem.detail)
@@ -194,6 +224,49 @@ describe('Step and Input rejection', () => {
   })
 })
 
+it('prunes deleted Step errors from a pending rejection but retains Input and live Step errors through reorder', async () => {
+  const run = createRunState()
+  const chain = chainOf()
+  const inputError = { stepId: null, field: null, code: 'input-too-long', detail: 'Input is too long.' }
+  let reject!: (reason: RunRejected) => void
+  const pending = executeRun(run, chain, () => new Promise((_resolve, fail) => { reject = fail }))
+  chain.steps.reverse()
+  chain.steps = chain.steps.filter((step) => step.id !== UPPER)
+  reject(new RunRejected({ ...problem, errors: [...problem.errors, inputError] }))
+  await pending
+  expect(run.errors).toEqual([problem.errors[1], inputError])
+  expect(run.sentRequest).toBe(JSON.stringify(requestOf(chainOf())))
+  expect(run.detail).toBe(problem.detail)
+})
+
+it.each(['before', 'after'])('keeps Output unavailable when the last errored Step is deleted %s rejection', async (timing) => {
+  const run = createRunState()
+  const chain: Chain = {
+    inputText: 'a',
+    steps: [{ id: UPPER, transformationId: 'replace', values: { search: '', replacement: '' } }],
+  }
+  // A rejected run must also discard Output from a previous successful run.
+  await executeRun(run, chain, async () => response)
+  let reject!: (reason: RunRejected) => void
+  const pending = executeRun(run, chain, () => new Promise((_resolve, fail) => { reject = fail }))
+  const deleteStep = () => {
+    chain.steps = []
+    run.errors = run.errors.filter((error) => error.stepId !== UPPER)
+  }
+  if (timing === 'before') deleteStep()
+  reject(new RunRejected({ ...problem, errors: [problem.errors[0]!] }))
+  await pending
+  if (timing === 'after') deleteStep()
+  expect(run.errors).toEqual([])
+  expect(run.output).toBeUndefined()
+})
+
+it('distinguishes a successful empty Output from unavailable Output', async () => {
+  const run = createRunState()
+  expect(run.output).toBeUndefined()
+  await executeRun(run, { inputText: '', steps: [] }, async () => ({ output: '', steps: [] }))
+  expect(run.output).toBe('')
+})
 
 afterEach(() => vi.useRealTimers())
 

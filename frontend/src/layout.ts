@@ -13,7 +13,7 @@ export interface Viewport extends Point {
 
 export interface Layout {
   mode: LayoutMode
-  // Only nodes the user has dragged are here; every other node sits in its slot.
+  // Explicit positions from dragging, keyboard movement or swaps; others sit in their slots.
   positions: Record<string, Point>
   viewport: Viewport | null
 }
@@ -39,4 +39,10 @@ export function handlePositions(mode: LayoutMode) {
   return mode === 'phone'
     ? { target: Position.Top, source: Position.Bottom }
     : { target: Position.Left, source: Position.Right }
+}
+
+// Asks the node `id` to take focus: its first Field, or only the node itself when `nodeOnly`.
+export interface FocusRequest {
+  id: string
+  nodeOnly: boolean
 }

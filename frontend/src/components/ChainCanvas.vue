@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import { until, usePreferredReducedMotion } from '@vueuse/core'
 import {
   Background,
@@ -19,6 +19,7 @@ import {
   handlePositions,
   slot,
   titleIdOf,
+  type FocusRequest,
   type Layout,
   type Point,
 } from '../layout'
@@ -34,12 +35,15 @@ const props = defineProps<{
   maxInputLength: number
   run: RunState
   dimmed: boolean
+  focusRequest?: FocusRequest | null
 }>()
 
 const emit = defineEmits<{
   'update:inputText': [value: string]
   'update:positions': [positions: Record<string, Point>]
   'update:viewport': [viewport: Viewport]
+  'delete-step': [stepId: string]
+  'move-step': [stepId: string, direction: -1 | 1]
   'update-field': [stepId: string, name: string, value: FieldValue]
 }>()
 
@@ -86,6 +90,9 @@ const stepPropsById = computed(() => {
       ...errorPropsByStepId.value[step.id],
       stepId: step.id,
       index,
+      canMoveEarlier: index > 0,
+      canMoveLater: index < props.chain.steps.length - 1,
+      phone: props.layout.mode === 'phone',
       label: transformation?.label ?? step.transformationId,
       fields: transformation?.fields ?? [],
       values: step.values,
@@ -188,8 +195,12 @@ function onMoveEnd({ viewport }: { viewport: Viewport }) {
   emit('update:viewport', { x: viewport.x, y: viewport.y, zoom: viewport.zoom })
 }
 
-// Pans to a node, keeping the zoom, and moves focus to it.
-async function reveal(id: string) {
+// Handed to the node that should take focus, once the canvas has panned to it.
+const nodeFocus = shallowRef<FocusRequest | null>(null)
+const focusById = computed(() => (nodeFocus.value ? { [nodeFocus.value.id]: nodeFocus.value } : {}))
+
+// Pans to a node, keeping the zoom, and asks it to take focus.
+async function reveal({ id, nodeOnly }: FocusRequest) {
   // Gives up quietly after half a second; the fallbacks below cover an unmeasured node.
   await until(() => getNode(id)?.measured?.width).toBeTruthy({ timeout: 500 })
   const node = getNode(id)
@@ -200,16 +211,34 @@ async function reveal(id: string) {
     zoom: getViewport().zoom,
     duration: duration(),
   })
-  const element = document.querySelector<HTMLElement>(`.vue-flow__node[data-id="${id}"]`)
-  const firstField = element?.querySelector<HTMLElement>('.field input, .field select')
-  if (firstField) {
-    firstField.focus({ preventScroll: true })
-  } else {
-    element?.focus({ preventScroll: true })
+  nodeFocus.value = { id, nodeOnly }
+}
+
+function focusedStep(event: KeyboardEvent) {
+  const target = event.target
+  return target instanceof HTMLElement && target === document.activeElement &&
+    target.matches('.vue-flow__node-step') ? target.dataset.id : undefined
+}
+
+function onKeydown(event: KeyboardEvent) {
+  const id = focusedStep(event)
+  if (id && event.key === 'Delete') {
+    event.preventDefault()
+    emit('delete-step', id)
   }
 }
 
-defineExpose({ reveal })
+function onKeyup(event: KeyboardEvent) {
+  const target = event.target
+  if (!(target instanceof HTMLElement) || target !== document.activeElement ||
+      !target.matches('.vue-flow__node') || !event.key.startsWith('Arrow')) return
+  const node = getNode(target.dataset.id ?? '')
+  if (node) emit('update:positions', { [node.id]: { ...node.position } })
+}
+
+watch(() => props.focusRequest, (request) => {
+  if (request) reveal(request)
+})
 </script>
 
 <template>
@@ -224,6 +253,8 @@ defineExpose({ reveal })
     :nodes-connectable="false"
     :min-zoom="0.3"
     attribution-position="bottom-left"
+    @keydown="onKeydown"
+    @keyup="onKeyup"
     @node-drag-stop="onNodeDragStop"
     @move-end="onMoveEnd"
   >
@@ -238,6 +269,7 @@ defineExpose({ reveal })
 
     <template #node-inputtext>
       <InputNode
+        :focus-request="focusById[INPUT_ID] ?? null"
         :text="chain.inputText"
         :errors="inputErrors"
         :suppress-errors="run.status === 'failed'"
@@ -251,18 +283,22 @@ defineExpose({ reveal })
     <template #node-step="{ id }">
       <StepNode
         v-if="stepPropsById[id]"
+        :focus-request="focusById[id] ?? null"
         v-bind="stepPropsById[id]"
         :result="run.results[id]"
         :dimmed="dimmed"
         :source-position="ends.source"
         :target-position="ends.target"
         @update-field="onUpdateField"
+        @delete-step="emit('delete-step', $event)"
+        @move-step="(stepId, direction) => emit('move-step', stepId, direction)"
       />
     </template>
 
     <template #node-outputtext>
       <OutputNode
-        :output="run.sentRequest === null || run.errors.length > 0 ? undefined : run.output"
+        :focus-request="focusById[OUTPUT_ID] ?? null"
+        :output="run.output"
         :dimmed="dimmed"
         :target-position="ends.target"
       />

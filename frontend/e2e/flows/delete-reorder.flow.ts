@@ -1,0 +1,65 @@
+import { test, expect } from './fixtures'
+import mixedErrors from '../../../contract/post-chain-run.mixed-errors.422.json' with { type: 'json' }
+import stepErrors from '../../../contract/post-chain-run.two-broken-steps.422.json' with { type: 'json' }
+
+test('reorders a Chain, runs the changed order, and deletes Steps', async ({ page, expectDomainRejection }, testInfo) => {
+  await page.goto('/')
+  await page.getByRole('textbox', { name: 'Input text' }).fill('a')
+  const palette = page.getByRole('region', { name: 'Add Step' })
+  await palette.getByRole('button', { name: 'Append', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Text', exact: true }).fill('b')
+  await palette.getByRole('button', { name: 'Uppercase', exact: true }).click()
+  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  await expect(page.getByRole('status')).toHaveText('Up to date')
+  const output = page.getByRole('group', { name: 'Output', exact: true })
+  await expect(output).toContainText('AB')
+  await page.getByRole('button', { name: 'Fit View' }).click()
+  await page.screenshot({ path: testInfo.outputPath('01-chain.png') })
+  const live = page.locator('#chain-announcement')
+  await expect(live).toBeEmpty()
+  await page.getByRole('button', { name: 'Move Step 1: Append later' }).click()
+  await expect(live).toHaveText('Moved Append to position 2 of 2.')
+  await expect(page.getByRole('status')).toHaveText('Changed since the last run')
+  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  await expect(page.getByRole('status')).toHaveText('Up to date')
+  await expect(output).toContainText('Ab')
+  await page.screenshot({ path: testInfo.outputPath('02-moved.png') })
+  await page.getByRole('button', { name: 'Delete Step 2: Append' }).click()
+  await expect(page.getByRole('group', { name: 'Step 1: Uppercase', exact: true })).toBeFocused()
+  await expect(live).toHaveText('Deleted Append. Step 1: Uppercase now leads into Output.')
+  await page.screenshot({ path: testInfo.outputPath('03-deleted.png') })
+  await page.setViewportSize({ width: 390, height: 844 })
+  const earlier = page.getByRole('button', { name: 'Move Step 1: Uppercase earlier' })
+  await expect(earlier).toHaveText('↑')
+  await expect(earlier).toBeDisabled()
+  await page.screenshot({ path: testInfo.outputPath('04-phone.png') })
+  await page.getByRole('button', { name: 'Delete Step 1: Uppercase' }).click()
+  await expect(page.getByRole('group', { name: 'Input text', exact: true })).toBeFocused()
+  await expect(live).toHaveText('Deleted Uppercase. Input text now leads into Output.')
+
+  await page.getByRole('textbox', { name: 'Input text', exact: true }).fill('x'.repeat(3001))
+  await palette.getByRole('button', { name: 'Replace', exact: true }).click()
+  const search = page.getByRole('textbox', { name: 'Search', exact: true })
+  await expect(search).toBeFocused()
+  await expect(search).not.toHaveAttribute('aria-invalid')
+  const rejected = page.waitForResponse((response) => response.url().endsWith('/api/chain/run') && response.status() === 422)
+  await search.press('Control+Enter')
+  const response = await rejected
+  const id = response.request().postDataJSON().steps[0].id as string
+  await expectDomainRejection(response, {
+    ...mixedErrors,
+    detail: '2 problems stop the Chain from running.',
+    errors: [mixedErrors.errors[0], { ...stepErrors.errors[0], stepId: id }],
+  })
+  await expect(page.locator('.node--invalid')).toHaveCount(2)
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click()
+  await page.screenshot({ path: testInfo.outputPath('05-rejected.png') })
+  await page.getByRole('button', { name: 'Delete Step 1: Replace', exact: true }).click()
+  await expect(page.getByRole('group', { name: 'Input text', exact: true })).toBeFocused()
+  await expect(page.locator('.vue-flow__node-step')).toHaveCount(0)
+  await expect(page.locator('.node--invalid')).toHaveCount(1)
+  await expect(page.getByRole('textbox', { name: 'Input text', exact: true })).toHaveAttribute('aria-invalid', 'true')
+  await expect(live).toHaveText('Deleted Replace. Input text now leads into Output.')
+  await page.screenshot({ path: testInfo.outputPath('06-pruned.png') })
+  await expect(page.locator('.vue-flow__node-step')).toHaveCount(0)
+})

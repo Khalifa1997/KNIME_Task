@@ -10,7 +10,8 @@ export interface Chain {
 export interface RunState {
   status: 'idle' | 'running' | 'ok' | 'rejected' | 'failed'
   slow: boolean
-  output: string
+  // Undefined until a successful run, or after a rejection clears previous Output.
+  output: string | undefined
   results: Record<string, string>
   errors: RunError[]
   detail: string
@@ -21,7 +22,7 @@ export interface RunState {
 }
 
 export function createRunState(): RunState {
-  return { status: 'idle', slow: false, output: '', results: {}, errors: [], detail: '', sentRequest: null, sequence: 0 }
+  return { status: 'idle', slow: false, output: undefined, results: {}, errors: [], detail: '', sentRequest: null, sequence: 0 }
 }
 
 export function requestOf(chain: Chain): RunRequest {
@@ -64,7 +65,10 @@ export async function executeRun(
     if (sequence !== run.sequence) return
     run.status = 'ok'
     run.output = response.output
-    run.results = Object.fromEntries(response.steps.map((step) => [step.id, step.output]))
+    const liveIds = new Set(chain.steps.map((step) => step.id))
+    run.results = Object.fromEntries(
+      response.steps.filter((step) => liveIds.has(step.id)).map((step) => [step.id, step.output]),
+    )
     run.sentRequest = JSON.stringify(request)
     run.detail = ''
     run.errors = []
@@ -72,9 +76,10 @@ export async function executeRun(
     if (sequence !== run.sequence) return
     if (error instanceof RunRejected) {
       run.status = 'rejected'
-      run.errors = error.problem.errors
+      const liveIds = new Set(chain.steps.map((step) => step.id))
+      run.errors = error.problem.errors.filter((item) => item.stepId === null || liveIds.has(item.stepId))
       run.detail = error.problem.detail
-      run.output = ''
+      run.output = undefined
       run.results = {}
       run.sentRequest = JSON.stringify(request)
       return

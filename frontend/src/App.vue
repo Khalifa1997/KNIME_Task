@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { onKeyStroke, useMediaQuery } from '@vueuse/core'
+import { onKeyStroke, useActiveElement, useMediaQuery } from '@vueuse/core'
 import { fetchMetadata } from './api/metadata'
 import { postRun } from './api/run'
 import type { Metadata } from './api/types'
 import ChainCanvas from './components/ChainCanvas.vue'
-import { PHONE_QUERY, type Layout } from './layout'
+import { INPUT_ID, PHONE_QUERY, slot, type FocusRequest, type Layout } from './layout'
 import { createRunState, executeRun, requestOf, runStatus, type Chain } from './run'
 
 const metadata = ref<Metadata | null>(null)
@@ -44,7 +44,14 @@ const layout = reactive<Layout>({
   viewport: null,
 })
 const run = reactive(createRunState())
-const canvas = ref<InstanceType<typeof ChainCanvas> | null>(null)
+const focusRequest = ref<FocusRequest | null>(null)
+const activeElement = useActiveElement()
+
+function focusNode(id: string, nodeOnly = false) {
+  nextTick(() => {
+    focusRequest.value = { id, nodeOnly }
+  })
+}
 
 onMounted(loadMetadata)
 
@@ -65,7 +72,57 @@ function addStep(transformationId: string) {
   const values = Object.fromEntries(meta.fields.map((field) => [field.name, field.defaultValue]))
   const id = crypto.randomUUID()
   chain.steps.push({ id, transformationId, values })
-  nextTick(() => canvas.value?.reveal(id))
+  focusNode(id)
+}
+
+const announcement = ref('')
+let announcementSequence = 0
+function announce(text: string) {
+  const sequence = ++announcementSequence
+  announcement.value = ''
+  nextTick(() => {
+    if (sequence === announcementSequence) announcement.value = text
+  })
+}
+
+function stepLabel(step: Chain['steps'][number]) {
+  return metadata.value?.transformations.find((item) => item.id === step.transformationId)?.label
+    ?? step.transformationId
+}
+
+function deleteStep(id: string) {
+  const index = chain.steps.findIndex((step) => step.id === id)
+  const step = chain.steps[index]
+  if (!step) return
+  const label = stepLabel(step)
+  const previousId = chain.steps[index - 1]?.id ?? INPUT_ID
+  chain.steps.splice(index, 1)
+  delete layout.positions[id]
+  delete run.results[id]
+  run.errors = run.errors.filter((error) => error.stepId !== id)
+  const previous = chain.steps[index - 1]
+  const next = chain.steps[index]
+  announce(`Deleted ${label}. ${previous ? `Step ${index}: ${stepLabel(previous)}` : 'Input text'} now leads into ${next ? `Step ${index + 1}: ${stepLabel(next)}` : 'Output'}.`)
+  focusNode(previousId, true)
+}
+
+function moveStep(id: string, direction: -1 | 1) {
+  const index = chain.steps.findIndex((step) => step.id === id)
+  const targetIndex = index + direction
+  const step = chain.steps[index]
+  const neighbor = chain.steps[targetIndex]
+  if (!step || !neighbor || (direction !== -1 && direction !== 1)) return
+  const position = { ...(layout.positions[id] ?? slot(index + 1, layout.mode)) }
+  const neighborPosition = { ...(layout.positions[neighbor.id] ?? slot(targetIndex + 1, layout.mode)) }
+  chain.steps[index] = neighbor
+  chain.steps[targetIndex] = step
+  layout.positions = { ...layout.positions, [id]: neighborPosition, [neighbor.id]: position }
+  announce(`Moved ${stepLabel(step)} to position ${targetIndex + 1} of ${chain.steps.length}.`)
+  // Keeps focus on the moved Step unless one of its own buttons already has it.
+  nextTick(() => {
+    const active = activeElement.value
+    if (!(active instanceof HTMLButtonElement) || active.disabled) focusRequest.value = { id, nodeOnly: true }
+  })
 }
 
 const status = computed(() => runStatus(run, requestOf(chain)))
@@ -155,6 +212,14 @@ onKeyStroke('Enter', (event) => {
         </button>
       </div>
     </header>
+    <div
+      id="chain-announcement"
+      class="visually-hidden"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {{ announcement }}
+    </div>
     <main class="workspace">
       <p
         v-if="phase === 'loading'"
@@ -185,6 +250,8 @@ onKeyStroke('Enter', (event) => {
         </button>
       </section>
       <ChainCanvas
+        v-if="metadata"
+        :focus-request="focusRequest"
         v-if="readyMetadata"
         ref="canvas"
         :chain="chain"
@@ -193,6 +260,8 @@ onKeyStroke('Enter', (event) => {
         :max-input-length="readyMetadata.limits.maxInputLength"
         :run="run"
         :dimmed="status.dimmed"
+        @delete-step="deleteStep"
+        @move-step="moveStep"
         @update:input-text="chain.inputText = $event"
         @update-field="(stepId, name, value) => {
           const step = chain.steps.find((candidate) => candidate.id === stepId)
