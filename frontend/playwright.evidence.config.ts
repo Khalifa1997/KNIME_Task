@@ -1,5 +1,5 @@
+import { jarServer } from './playwright-server'
 import { defineConfig } from '@playwright/test'
-import { jarServer } from './e2e/server'
 
 // Evidence recording only; kept apart from the repo's regular test config.
 // Records against the real jar: build it first with `./mvnw package`.

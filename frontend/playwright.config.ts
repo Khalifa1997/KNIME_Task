@@ -1,6 +1,6 @@
+import { jarServer } from './playwright-server'
 import process from 'node:process'
 import { defineConfig, devices } from '@playwright/test'
-import { jarServer } from './e2e/server'
 
 // End-to-end tests run against the real jar: build it first with `./mvnw package`.
 const { baseURL, webServer } = jarServer(8181)
