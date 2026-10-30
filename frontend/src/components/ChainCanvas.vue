@@ -17,6 +17,7 @@ import type { RunError, FieldValue, TransformationMeta } from '../api/types'
 import {
   INPUT_ID,
   OUTPUT_ID,
+  edgeIdOf,
   handlePositions,
   slot,
   titleIdOf,
@@ -28,6 +29,7 @@ import type { Chain, RunState } from '../run'
 import { stepUnderPointer } from '../swap'
 import InputNode from './InputNode.vue'
 import OutputNode from './OutputNode.vue'
+import FlowEdge from './FlowEdge.vue'
 import StepNode from './StepNode.vue'
 
 const props = defineProps<{
@@ -142,14 +144,22 @@ const spokenName = (index: number) =>
   index === 0 ? 'Input text' : index === ids.value.length - 1 ? 'Output' : `Step ${index}`
 
 watch(
-  [ids, reducedMotion],
+  [ids, reducedMotion, () => props.run.status, () => props.run.flash],
   () => {
+    const flashedIds = new Set(props.run.flash?.edgeIds)
     edges.value = ids.value.slice(1).map((target, index) => ({
-      id: `${ids.value[index]}->${target}`,
+      id: edgeIdOf(ids.value[index] as string, target),
       source: ids.value[index] as string,
       target,
       ariaLabel: `${spokenName(index)} to ${spokenName(index + 1)}`,
-      animated: !reducedMotion.value,
+      type: 'flow',
+      data: {
+        index,
+        // The fill draws while running and holds until the result arrives.
+        filling: props.run.status === 'running',
+        flash: flashedIds.has(edgeIdOf(ids.value[index] as string, target)) ? props.run.flash?.kind : null,
+        reducedMotion: reducedMotion.value,
+      },
       selectable: false,
       focusable: false,
       deletable: false,
@@ -307,7 +317,7 @@ watch(() => props.focusRequest, (request) => {
     :edges-focusable="false"
     :nodes-connectable="false"
     :min-zoom="0.3"
-    attribution-position="bottom-left"
+    :pro-options="{ hideAttribution: true }"
     @keydown="onKeydown"
     @keyup="onKeyup"
     @node-drag-start="onNodeDragStart"
@@ -324,6 +334,9 @@ watch(() => props.focusRequest, (request) => {
       position="bottom-right"
     />
 
+    <template #edge-flow="edgeProps">
+      <FlowEdge v-bind="edgeProps" />
+    </template>
     <Panel
       v-if="swapHintVisible"
       class="swap-hint"
@@ -389,7 +402,6 @@ watch(() => props.focusRequest, (request) => {
   --xy-node-background-color: transparent;
   --xy-node-boxshadow-hover: none;
   --xy-node-boxshadow-selected: none;
-  --xy-attribution-background-color: transparent;
   min-height: 0;
 }
 
@@ -402,16 +414,6 @@ watch(() => props.focusRequest, (request) => {
   color: var(--text-on-dark);
   font-size: var(--text-sm);
   pointer-events: none;
-}
-
-/* A 24px target (WCAG 2.5.8), away from the zoom controls in the other corner. */
-.chain-canvas .vue-flow__attribution a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.5rem;
-  padding: 0 0.25rem;
-  color: var(--muted-on-dark);
-  font-size: var(--text-sm);
 }
 
 /* Our cards draw their own border; Vue Flow's wrapper only positions them. */

@@ -1,3 +1,4 @@
+import { INPUT_ID, OUTPUT_ID, edgeIdOf } from './layout'
 import { RunFailure, RunRejected } from './api/run'
 // Running a Chain, as plain state that App.vue holds and these functions update.
 import type { FieldValue, RunError, RunRequest, RunResponse } from './api/types'
@@ -19,10 +20,18 @@ export interface RunState {
   sentRequest: string | null
   // Counts runs, so the response of a superseded run is dropped.
   sequence: number
+  // Null while running and after anything but a success or a Step error.
+  flash: RunFlash | null
+}
+
+// The edges that flash when a run ends: all of them on success, red up to the first failing Step.
+export interface RunFlash {
+  kind: 'success' | 'danger'
+  edgeIds: string[]
 }
 
 export function createRunState(): RunState {
-  return { status: 'idle', slow: false, output: undefined, results: {}, errors: [], detail: '', sentRequest: null, sequence: 0 }
+  return { status: 'idle', slow: false, output: undefined, results: {}, errors: [], detail: '', sentRequest: null, sequence: 0, flash: null }
 }
 
 export function requestOf(chain: Chain): RunRequest {
@@ -47,6 +56,19 @@ export function runStatus(run: RunState, current: RunRequest): { text: string; d
     : { text: 'Up to date', dimmed: false }
 }
 
+function edgeIdsOf(stepIds: string[]): string[] {
+  const nodeIds = [INPUT_ID, ...stepIds, OUTPUT_ID]
+  return nodeIds.slice(1).map((target, index) => edgeIdOf(nodeIds[index] as string, target))
+}
+
+// The edges from Input text up to the one entering the first failing Step, or null with no Step error.
+function dangerFlash(stepIds: string[], errors: RunError[]): RunFlash | null {
+  const failing = new Set(errors.map((error) => error.stepId))
+  const firstFailing = stepIds.findIndex((id) => failing.has(id))
+  if (firstFailing === -1) return null
+  return { kind: 'danger', edgeIds: edgeIdsOf(stepIds).slice(0, firstFailing + 1) }
+}
+
 export async function executeRun(
   run: RunState,
   chain: Chain,
@@ -57,6 +79,7 @@ export async function executeRun(
   const sequence = ++run.sequence
   run.status = 'running'
   run.slow = false
+  run.flash = null
   const slowTimer = setTimeout(() => {
     if (sequence === run.sequence && run.status === 'running') run.slow = true
   }, 5_000)
@@ -72,6 +95,7 @@ export async function executeRun(
     run.sentRequest = JSON.stringify(request)
     run.detail = ''
     run.errors = []
+    run.flash = { kind: 'success', edgeIds: edgeIdsOf(chain.steps.map((step) => step.id)) }
   } catch (error) {
     if (sequence !== run.sequence) return
     if (error instanceof RunRejected) {
@@ -82,6 +106,7 @@ export async function executeRun(
       run.output = undefined
       run.results = {}
       run.sentRequest = JSON.stringify(request)
+      run.flash = dangerFlash(chain.steps.map((step) => step.id), run.errors)
       return
     }
     run.status = 'failed'
