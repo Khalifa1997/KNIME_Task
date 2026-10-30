@@ -4,6 +4,7 @@ import { Handle, type Position } from '@xyflow/vue'
 import { INPUT_ID, titleIdOf } from '../layout'
 
 const props = defineProps<{
+  errors: string[]
   text: string
   maxInputLength: number
   sourcePosition: Position
@@ -23,7 +24,10 @@ function onInput(event: Event) {
 
 <template>
   <!-- Vue Flow's node wrapper is the group, named by this node's heading. -->
-  <div class="node node--io">
+  <div
+    class="node node--io"
+    :class="{ 'node--invalid': errors.length > 0 }"
+  >
     <h2
       :id="titleIdOf(INPUT_ID)"
       class="node__title"
@@ -35,7 +39,8 @@ function onInput(event: Event) {
       class="input-node__text nodrag nowheel nokey"
       rows="4"
       :aria-labelledby="titleIdOf(INPUT_ID)"
-      aria-describedby="input-count"
+      :aria-describedby="errors.length ? 'input-count input-errors' : 'input-count'"
+      :aria-invalid="errors.length ? true : undefined"
       :value="text"
       @input="onInput"
     />
@@ -47,6 +52,18 @@ function onInput(event: Event) {
     >
       {{ count }}
     </p>
+    <div
+      v-if="errors.length"
+      id="input-errors"
+      class="error-messages"
+    >
+      <p
+        v-for="(message, index) in errors"
+        :key="index"
+      >
+        {{ message }}
+      </p>
+    </div>
     <!-- Edges are drawn for the user, never by them, so the handles are only decoration. -->
     <Handle
       aria-hidden="true"
