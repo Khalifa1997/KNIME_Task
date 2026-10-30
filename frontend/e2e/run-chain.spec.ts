@@ -72,6 +72,7 @@ test('edits the Fields of a Replace Step and sees the changed Output', async ({ 
   await palette.getByRole('button', { name: 'Replace' }).click()
 
   const step = page.getByRole('group', { name: 'Step 1: Replace' })
+  await expect(step.getByRole('textbox', { name: 'Search' })).toBeFocused()
   await step.getByRole('textbox', { name: 'Search' }).fill('a')
   const replacement = step.getByRole('textbox', { name: 'Replacement' })
   await replacement.fill('x')

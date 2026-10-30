@@ -60,6 +60,7 @@ test('deletes only focused wrappers, preserves native Field keys, and exposes ac
   for (const name of ['Uppercase', 'Replace', 'Lowercase']) {
     await palette.getByRole('button', { name, exact: true }).click()
   }
+  await expect(page.getByRole('group', { name: 'Step 3: Lowercase', exact: true })).toBeFocused()
   const replace = page.getByRole('group', { name: 'Step 2: Replace', exact: true })
   const search = replace.getByRole('textbox', { name: 'Search', exact: true })
   await search.fill('abc')
