@@ -5,7 +5,7 @@ import { fetchMetadata } from './api/metadata'
 import { postRun } from './api/run'
 import type { Metadata } from './api/types'
 import ChainCanvas from './components/ChainCanvas.vue'
-import { INPUT_ID, PHONE_QUERY, slot, type FocusRequest, type Layout } from './layout'
+import { INPUT_ID, PHONE_QUERY, slot, type FocusRequest, type Layout, type Point } from './layout'
 import { createRunState, executeRun, requestOf, runStatus, type Chain } from './run'
 
 const metadata = ref<Metadata | null>(null)
@@ -118,11 +118,31 @@ function moveStep(id: string, direction: -1 | 1) {
   chain.steps[targetIndex] = step
   layout.positions = { ...layout.positions, [id]: neighborPosition, [neighbor.id]: position }
   announce(`Moved ${stepLabel(step)} to position ${targetIndex + 1} of ${chain.steps.length}.`)
-  // Keeps focus on the moved Step unless one of its own buttons already has it.
+  keepFocusOn(id)
+}
+
+// Keeps focus on the Step unless one of its own buttons already has it.
+function keepFocusOn(id: string) {
   nextTick(() => {
     const active = activeElement.value
     if (!(active instanceof HTMLButtonElement) || active.disabled) focusRequest.value = { id, nodeOnly: true }
   })
+}
+
+// The dragged Step takes the target's place in the Chain and on the canvas, and the target takes
+// the spot the dragged Step was dragged from.
+function swapSteps(draggedId: string, targetId: string, draggedStart: Point) {
+  const index = chain.steps.findIndex((step) => step.id === draggedId)
+  const targetIndex = chain.steps.findIndex((step) => step.id === targetId)
+  const dragged = chain.steps[index]
+  const target = chain.steps[targetIndex]
+  if (!dragged || !target || index === targetIndex) return
+  const targetPosition = { ...(layout.positions[targetId] ?? slot(targetIndex + 1, layout.mode)) }
+  chain.steps[index] = target
+  chain.steps[targetIndex] = dragged
+  layout.positions = { ...layout.positions, [draggedId]: targetPosition, [targetId]: { ...draggedStart } }
+  announce(`Swapped ${stepLabel(dragged)} and ${stepLabel(target)}. ${stepLabel(dragged)} is now Step ${targetIndex + 1}.`)
+  keepFocusOn(draggedId)
 }
 
 const status = computed(() => runStatus(run, requestOf(chain)))
@@ -260,6 +280,7 @@ onKeyStroke('Enter', (event) => {
         :dimmed="status.dimmed"
         @delete-step="deleteStep"
         @move-step="moveStep"
+        @swap-steps="swapSteps"
         @update:input-text="chain.inputText = $event"
         @update-field="(stepId, name, value) => {
           const step = chain.steps.find((candidate) => candidate.id === stepId)
