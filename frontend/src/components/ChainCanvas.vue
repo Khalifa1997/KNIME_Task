@@ -12,7 +12,7 @@ import {
   type NodeDragEvent,
   type Viewport,
 } from '@xyflow/vue'
-import type { FieldValue, TransformationMeta } from '../api/types'
+import type { RunError, FieldValue, TransformationMeta } from '../api/types'
 import {
   INPUT_ID,
   OUTPUT_ID,
@@ -58,12 +58,34 @@ const initialized = useNodesInitialized()
 const motionPreference = usePreferredReducedMotion()
 const reducedMotion = computed(() => motionPreference.value === 'reduce')
 
+const inputErrors = computed(() => props.run.errors.filter((error) => error.stepId === null).map((error) => error.detail))
+const errorsByStepId = computed(() => {
+  const byId: Record<string, RunError[]> = {}
+  for (const error of props.run.errors) {
+    if (error.stepId !== null) (byId[error.stepId] ??= []).push(error)
+  }
+  return byId
+})
+const errorPropsByStepId = computed(() => Object.fromEntries(
+  Object.entries(errorsByStepId.value).map(([id, errors]) => {
+    const fieldErrors: Record<string, string[]> = {}
+    for (const error of errors) {
+      if (error.field !== null) (fieldErrors[error.field] ??= []).push(error.detail)
+    }
+    return [id, { invalid: true, fieldErrors, wholeStepErrors: errors.filter((error) => error.field === null).map((error) => error.detail) }]
+  }),
+))
+
 // Resolve each Step's display props once, rather than searching repeatedly in the slot template.
 const stepPropsById = computed(() => {
   const transformationsById = new Map(props.transformations.map((item) => [item.id, item]))
   return Object.fromEntries(props.chain.steps.map((step, index) => {
     const transformation = transformationsById.get(step.transformationId)
     return [step.id, {
+      invalid: false,
+      fieldErrors: {},
+      wholeStepErrors: [],
+      ...errorPropsByStepId.value[step.id],
       stepId: step.id,
       index,
       canMoveEarlier: index > 0,
@@ -254,6 +276,7 @@ defineExpose({ reveal, retainStepFocus })
     <template #node-inputtext>
       <InputNode
         :text="chain.inputText"
+        :errors="inputErrors"
         :max-input-length="maxInputLength"
         :source-position="ends.source"
         @update:text="emit('update:inputText', $event)"
@@ -276,7 +299,7 @@ defineExpose({ reveal, retainStepFocus })
 
     <template #node-outputtext>
       <OutputNode
-        :output="run.sentRequest === null ? undefined : run.output"
+        :output="run.sentRequest === null || run.errors.length > 0 ? undefined : run.output"
         :dimmed="dimmed"
         :target-position="ends.target"
       />

@@ -89,3 +89,28 @@ describe('FieldInput', () => {
     expect(second.get('input').attributes('id')).toBe('field-second-value')
   })
 })
+
+it.each(['text', 'integer', 'boolean', 'select'] as const)('links all %s errors and removes invalid semantics after success', async (type) => {
+  const wrapper = mount(FieldInput, {
+    props: { ...props({ type }), errors: ['First server detail.', 'Second server detail.'] },
+  })
+  const control = wrapper.get(type === 'select' ? 'select' : 'input')
+  const description = control.attributes('aria-describedby')!
+  expect(control.attributes('aria-invalid')).toBe('true')
+  expect(wrapper.get(`#${description}`).text()).toContain('First server detail.')
+  expect(wrapper.get(`#${description}`).text()).toContain('Second server detail.')
+  await wrapper.setProps({ errors: [] })
+  expect(control.attributes('aria-invalid')).toBeUndefined()
+  expect(control.attributes('aria-describedby')).toBeUndefined()
+  expect(wrapper.find(`#${description}`).exists()).toBe(false)
+})
+
+it('keeps error description ids unique across Steps with the same Field', () => {
+  const first = mount(FieldInput, { props: { ...props({}, '', 'first'), errors: ['First'] } })
+  const second = mount(FieldInput, { props: { ...props({}, '', 'second'), errors: ['Second'] } })
+  const firstId = first.get('input').attributes('aria-describedby')!
+  const secondId = second.get('input').attributes('aria-describedby')!
+  expect(firstId).not.toBe(secondId)
+  expect(first.get(`#${firstId}`).text()).toBe('First')
+  expect(second.get(`#${secondId}`).text()).toBe('Second')
+})

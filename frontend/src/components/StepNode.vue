@@ -5,6 +5,9 @@ import type { FieldMeta, FieldValue } from '../api/types'
 import FieldInput from './FieldInput.vue'
 
 defineProps<{
+  invalid: boolean
+  wholeStepErrors: string[]
+  fieldErrors: Record<string, string[]>
   stepId: string
   canMoveEarlier: boolean
   canMoveLater: boolean
@@ -28,7 +31,10 @@ const emit = defineEmits<{
 
 <template>
   <!-- Vue Flow's node wrapper is the group, named by this node's heading. -->
-  <div class="node">
+  <div
+    class="node"
+    :class="{ 'node--invalid': invalid }"
+  >
     <!-- Edges are drawn for the user, never by them, so the handles are only decoration. -->
     <Handle
       aria-hidden="true"
@@ -73,11 +79,23 @@ const emit = defineEmits<{
         <span aria-hidden="true">×</span>
       </button>
     </div>
+    <div
+      v-if="wholeStepErrors.length"
+      class="error-messages"
+    >
+      <p
+        v-for="(message, errorIndex) in wholeStepErrors"
+        :key="errorIndex"
+      >
+        {{ message }}
+      </p>
+    </div>
     <FieldInput
       v-for="field in fields"
       :key="field.name"
       :step-id="stepId"
       :field="field"
+      :errors="fieldErrors[field.name]"
       :value="values[field.name] ?? null"
       @update:value="emit('update-field', stepId, field.name, $event)"
     />
