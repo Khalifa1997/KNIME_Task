@@ -758,3 +758,157 @@ yes to all three
 ```text
 Let's keep the view flow issue on mobile now for later. Just make a small issue for it using the PR skill. I would also like you to do all the commits. Glossary would go to the main branch and the others would go to the prototype branch. The repository is meant to be private. It's fine.
 ```
+
+## 2026-10-30 01:50:21
+
+```text
+/skill:wayfinder https://github.com/Khalifa1997/KNIME_Task/issues/1
+```
+
+## 2026-10-30 01:51:38
+
+```text
+yes do both
+```
+
+## 2026-10-30 01:56:21
+
+```text
+Instead of Playwright let's use Chrome Dev Tools as well, next to Playwright, for the performance regression if anything comes up. Otherwise they are all looking good to me. You can create this label: ready for agent.
+```
+
+## 2026-10-30 01:57:25
+
+```text
+/skill:to-tickets https://github.com/Khalifa1997/KNIME_Task/issues/21
+```
+
+## 2026-10-30 01:59:37
+
+```text
+Yes let's merge 5 and 6 as you said, as well as 16 and 17. The blocking is fine so everything is fine for it and no further splitting is needed.
+```
+
+## 2026-10-30 02:05:46
+
+```text
+/skill:implement https://github.com/Khalifa1997/KNIME_Task/issues/22
+```
+
+## 2026-10-30 02:21:57
+
+```text
+Task: Code review, STANDARDS axis only. Read-only: do not edit, build, or commit anything.
+
+The change under review is UNCOMMITTED work in D:\Projects\KNIME_Task against HEAD (branch main). Most files are untracked, so `git diff HEAD` shows only `.gitignore`; review by reading the new files. Run `git status --short -uall` and review every listed file EXCEPT: node_modules, frontend/package-lock.json, PROMPTS.md, .playwright-mcp, prototypes/ (not part of this change). The change is a walking skeleton: Maven aggregator (pom.xml, mvnw, .mvn) with modules core (plain Java 25), frontend (Vue 3 + TS, built by frontend-maven-plugin), app (Spring Boot 4.1.2); contract/ JSON fixture; tests.
+
+Standards sources: AGENTS.md at repo root (the only documented standards file). Its rules: frontend MUST be accessible and responsive; all Vue components MUST use Composition API and TypeScript; ESLint with eslint-plugin-vue and eslint-plugin-vuejs-accessibility; Java latest LTS library; Spring Boot web API calling the library in-process; never commit on your own. Also GLOSSARY.md for domain vocabulary (Transformation, Field, Choice, Step, Chain, Input text, Output, Step error, Input error, Saved session, Run failure; check names avoid the listed _Avoid_ terms).
+
+Smell baseline (Fowler, Refactoring ch.3). The repo overrides; each smell is always a judgement call, never a hard violation; skip anything tooling enforces (ESLint, vue-tsc, the compiler already pass):
+- Mysterious Name: a name that doesn't reveal what it does or holds. -> rename.
+- Duplicated Code: same logic shape in more than one hunk/file. -> extract shared shape.
+- Feature Envy: method reaching into another object's data more than its own. -> move it.
+- Data Clumps: same few fields/params travelling together. -> bundle into a type.
+- Primitive Obsession: primitive/string standing in for a domain concept. -> give it a type.
+- Repeated Switches: same switch/if-cascade on same type recurs. -> polymorphism or shared map.
+- Shotgun Surgery: one logical change forces scattered edits. -> gather into one module.
+- Divergent Change: one module edited for unrelated reasons. -> split.
+- Speculative Generality: abstraction/params/hooks for needs the spec doesn't have. -> delete it.
+- Message Chains: long a.b().c().d() navigation. -> hide behind one method.
+- Middle Man: class/function that mostly delegates. -> cut it.
+- Refused Bequest: implementer ignoring most of what it inherits. -> composition.
+
+Brief: Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and quote the hunk. Distinguish hard violations from judgement calls: documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Under 400 words.
+```
+
+## 2026-10-30 02:21:57
+
+```text
+Task: Code review, SPEC axis only. Read-only: do not edit, build, or commit anything.
+
+The change under review is UNCOMMITTED work in D:\Projects\KNIME_Task against HEAD (branch main). Most files are untracked, so `git diff HEAD` shows only `.gitignore`; review by reading the new files. Run `git status --short -uall` and review every listed file EXCEPT: node_modules, frontend/package-lock.json, PROMPTS.md, .playwright-mcp, prototypes/.
+
+The spec is GitHub issue #22 'Walking skeleton: one Transformation in the toolbar, served from one jar', saved verbatim at C:\Users\Ahmed\AppData\Local\Temp\spec\ticket22.md (read it). Its parent spec is issue #21 (`gh issue view 21` if you need context, e.g. the 15 design tokens, contract JSON shape, palette description semantics). Important scope note: later tickets own Add Step behaviour (#23), Field factories/validation (#24), the metadata loading/error gate (#28), phone layout (#32) — don't report those as missing here.
+
+Verified facts from the implementer (you may re-check by reading, not by running builds): `./mvnw package` succeeded with JDK 25 running core+app tests, npm lint, type-check, vitest; `-DskipTests` skipped the three npm steps; Java 8 produced the Enforcer message; `npm run test:e2e` passed 4 tests (desktop + phone, incl. axe); the jar served index.html and the API; the Vite proxy forwarded /api.
+
+Brief: Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words.
+```
+
+## 2026-10-30 02:42:15
+
+```text
+how is the project meant to be ran now?
+```
+
+## 2026-10-30 02:49:52
+
+```text
+./mvnw -pl app -am spring-boot:run
+[INFO] Scanning for projects...
+[INFO] Loaded 24294 auto-discovered prefixes for remote repository central (prefixes-central.txt)
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO]
+[INFO] Text Transformer                                                   [pom]
+[INFO] Text Transformer core                                              [jar]
+[INFO] Text Transformer frontend                                          [jar]
+[INFO] Text Transformer app                                               [jar]
+[INFO]
+[INFO] ---------------< io.github.khalifa1997:text-transformer >---------------
+[INFO] Building Text Transformer 0.1.0-SNAPSHOT                           [1/4]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO]
+[INFO] >>> spring-boot:4.1.2:run (default-cli) > test-compile @ text-transformer >>>
+[INFO]
+[INFO] --- enforcer:3.6.3:enforce (require-java-25) @ text-transformer ---
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for Text Transformer 0.1.0-SNAPSHOT:
+[INFO]
+[INFO] Text Transformer core .............................. SKIPPED
+[INFO] Text Transformer frontend .......................... SKIPPED
+[INFO] Text Transformer app ............................... SKIPPED
+[ERROR] Text Transformer ................................... FAILURE [  0.384 s]
+[INFO] ------------------------------------------------------------------------
+[ERROR] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.104 s
+[INFO] Finished at: 2026-10-30T02:49:20+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce (require-java-25) on project text-transformer:
+[ERROR] Rule 0: org.apache.maven.enforcer.rules.version.RequireJavaVersion failed with message:
+[ERROR] Java 25 is required: install Temurin 25 from adoptium.net
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
+```
+
+## 2026-10-30 02:52:31
+
+```text
+The JAVA_HOME environment variable is not defined correctly,
+this environment variable is needed to run this program.
+```
+
+## 2026-10-30 02:54:38
+
+```text
+/skill:pr let's make a PR
+```
+
+## 2026-10-30 03:06:41
+
+```text
+merged let's go onto the next go onto the next
+```
+
+## 2026-10-30 03:07:47
+
+```text
+/skill:implement https://github.com/Khalifa1997/KNIME_Task/issues/23
+```
