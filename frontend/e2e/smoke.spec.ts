@@ -9,7 +9,13 @@ test('shows one Add Step button per Transformation, described by its description
   await page.goto('/')
 
   const palette = page.getByRole('region', { name: 'Add Step' })
-  await expect(palette.getByRole('button')).toHaveText(['Uppercase', 'Lowercase'])
+  await expect(palette.getByRole('button')).toHaveText([
+    'Replace',
+    'Append',
+    'Prepend',
+    'Uppercase',
+    'Lowercase',
+  ])
   await expect(palette.getByRole('button', { name: 'Uppercase' })).toHaveAccessibleDescription(
     'Converts the text to upper case.',
   )

@@ -35,4 +35,13 @@ class ChainRunnerTest {
         assertThat(result).isInstanceOfSatisfying(
                 RunResult.Completed.class, completed -> assertThat(completed.output()).isEqualTo("ABC"));
     }
+
+    @Test
+    void aStepAppliesItsFieldValuesAndMissingOnesTakeTheirDefault() {
+        var result = runner.run("a-b-a", List.of(
+                new StepInput("replace", Map.of("search", "a", "replacement", "x")),
+                new StepInput("append", Map.of())));
+
+        assertThat(result).isEqualTo(new RunResult.Completed("x-b-x", List.of("x-b-x", "x-b-x")));
+    }
 }

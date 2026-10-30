@@ -142,6 +142,40 @@ textarea {
   white-space: nowrap;
 }
 
+/* Inline Fields shared by all Step cards. */
+.field {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+
+.field__label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.input {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+
+.checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--accent);
+}
+
+/* Fields inside cards: a darker, thicker border instead of the two-tone ring. */
+.field .input:focus-visible,
+.field .checkbox:focus-visible {
+  border-color: var(--text);
+  box-shadow: 0 0 0 1px var(--text);
+}
+
 /* Nodes: light cards on the dark canvas. A yellow top edge for Steps, grey for Input text and Output. */
 .node {
   width: 16.25rem;

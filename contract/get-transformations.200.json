@@ -1,6 +1,31 @@
 {
   "limits": { "maxInputLength": 3000, "maxSteps": 30 },
   "transformations": [
+    {
+      "id": "replace",
+      "label": "Replace",
+      "description": "Replaces every occurrence of some text with other text.",
+      "fields": [
+        { "name": "search", "label": "Search", "type": "text", "required": true, "defaultValue": null, "min": null, "max": null, "options": null },
+        { "name": "replacement", "label": "Replacement", "type": "text", "required": false, "defaultValue": "", "min": null, "max": null, "options": null }
+      ]
+    },
+    {
+      "id": "append",
+      "label": "Append",
+      "description": "Adds text to the end.",
+      "fields": [
+        { "name": "text", "label": "Text", "type": "text", "required": false, "defaultValue": "", "min": null, "max": null, "options": null }
+      ]
+    },
+    {
+      "id": "prepend",
+      "label": "Prepend",
+      "description": "Adds text to the start.",
+      "fields": [
+        { "name": "text", "label": "Text", "type": "text", "required": false, "defaultValue": "", "min": null, "max": null, "options": null }
+      ]
+    },
     { "id": "uppercase", "label": "Uppercase", "description": "Converts the text to upper case.", "fields": [] },
     { "id": "lowercase", "label": "Lowercase", "description": "Converts the text to lower case.", "fields": [] }
   ]

@@ -21,5 +21,6 @@ public interface Transformation {
     /** The Fields this Transformation declares, in display order. */
     List<FieldSpec> fields();
 
-    String apply(String input);
+    /** Applies this Transformation using values already coerced and defaulted by the runner. */
+    String apply(String input, FieldValues values);
 }

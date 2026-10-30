@@ -19,7 +19,7 @@ public final class ChainRunner {
             var transformation = registry.find(step.transformationId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Unknown Transformation: " + step.transformationId()));
-            text = transformation.apply(text);
+            text = transformation.apply(text, FieldValues.of(transformation.fields(), step.values()));
             stepOutputs.add(text);
         }
         return new RunResult.Completed(text, List.copyOf(stepOutputs));

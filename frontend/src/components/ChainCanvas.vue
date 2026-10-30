@@ -12,7 +12,7 @@ import {
   type NodeDragEvent,
   type Viewport,
 } from '@xyflow/vue'
-import type { TransformationMeta } from '../api/types'
+import type { FieldValue, TransformationMeta } from '../api/types'
 import {
   INPUT_ID,
   OUTPUT_ID,
@@ -40,7 +40,12 @@ const emit = defineEmits<{
   'update:inputText': [value: string]
   'update:positions': [positions: Record<string, Point>]
   'update:viewport': [viewport: Viewport]
+  'update-field': [stepId: string, name: string, value: FieldValue]
 }>()
+
+function onUpdateField(stepId: string, name: string, value: FieldValue) {
+  emit('update-field', stepId, name, value)
+}
 
 const FRAME_PADDING = '48px'
 
@@ -51,8 +56,20 @@ const initialized = useNodesInitialized()
 const motionPreference = usePreferredReducedMotion()
 const reducedMotion = computed(() => motionPreference.value === 'reduce')
 
-const labelOf = (transformationId: string) =>
-  props.transformations.find((t) => t.id === transformationId)?.label ?? transformationId
+// Resolve each Step's display props once, rather than searching repeatedly in the slot template.
+const stepPropsById = computed(() => {
+  const transformationsById = new Map(props.transformations.map((item) => [item.id, item]))
+  return Object.fromEntries(props.chain.steps.map((step, index) => {
+    const transformation = transformationsById.get(step.transformationId)
+    return [step.id, {
+      stepId: step.id,
+      index,
+      label: transformation?.label ?? step.transformationId,
+      fields: transformation?.fields ?? [],
+      values: step.values,
+    }]
+  }))
+})
 
 // Chain order: Input text, every Step, Output. The nodes array keeps this order for Tab order.
 const ends = computed(() => handlePositions(props.layout.mode))
@@ -161,9 +178,13 @@ async function reveal(id: string) {
     zoom: getViewport().zoom,
     duration: duration(),
   })
-  document
-    .querySelector<HTMLElement>(`.vue-flow__node[data-id="${id}"]`)
-    ?.focus({ preventScroll: true })
+  const element = document.querySelector<HTMLElement>(`.vue-flow__node[data-id="${id}"]`)
+  const firstField = element?.querySelector<HTMLElement>('.field input, .field select')
+  if (firstField) {
+    firstField.focus({ preventScroll: true })
+  } else {
+    element?.focus({ preventScroll: true })
+  }
 }
 
 defineExpose({ reveal })
@@ -204,13 +225,13 @@ defineExpose({ reveal })
 
     <template #node-step="{ id }">
       <StepNode
-        :step-id="id"
-        :index="chain.steps.findIndex((step) => step.id === id)"
-        :label="labelOf(chain.steps.find((step) => step.id === id)?.transformationId ?? '')"
+        v-if="stepPropsById[id]"
+        v-bind="stepPropsById[id]"
         :result="run.results[id]"
         :dimmed="dimmed"
         :source-position="ends.source"
         :target-position="ends.target"
+        @update-field="onUpdateField"
       />
     </template>
 
