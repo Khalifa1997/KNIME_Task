@@ -26,6 +26,9 @@ const GAP: Record<LayoutMode, number> = { desktop: 330, phone: 300 }
 export const INPUT_ID = 'input'
 export const OUTPUT_ID = 'output'
 
+// The id of the edge from `source` to `target`.
+export const edgeIdOf = (source: string, target: string) => `${source}->${target}`
+
 // The id of the heading that names a node, for aria-labelledby on Vue Flow's node wrapper.
 export const titleIdOf = (nodeId: string) => `node-${nodeId}-title`
 

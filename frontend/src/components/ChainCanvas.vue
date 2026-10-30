@@ -16,6 +16,7 @@ import type { RunError, FieldValue, TransformationMeta } from '../api/types'
 import {
   INPUT_ID,
   OUTPUT_ID,
+  edgeIdOf,
   handlePositions,
   slot,
   titleIdOf,
@@ -26,6 +27,7 @@ import {
 import type { Chain, RunState } from '../run'
 import InputNode from './InputNode.vue'
 import OutputNode from './OutputNode.vue'
+import FlowEdge from './FlowEdge.vue'
 import StepNode from './StepNode.vue'
 
 const props = defineProps<{
@@ -139,14 +141,22 @@ const spokenName = (index: number) =>
   index === 0 ? 'Input text' : index === ids.value.length - 1 ? 'Output' : `Step ${index}`
 
 watch(
-  [ids, reducedMotion],
+  [ids, reducedMotion, () => props.run.status, () => props.run.flash],
   () => {
+    const flashedIds = new Set(props.run.flash?.edgeIds)
     edges.value = ids.value.slice(1).map((target, index) => ({
-      id: `${ids.value[index]}->${target}`,
+      id: edgeIdOf(ids.value[index] as string, target),
       source: ids.value[index] as string,
       target,
       ariaLabel: `${spokenName(index)} to ${spokenName(index + 1)}`,
-      animated: !reducedMotion.value,
+      type: 'flow',
+      data: {
+        index,
+        // The fill draws while running and holds until the result arrives.
+        filling: props.run.status === 'running',
+        flash: flashedIds.has(edgeIdOf(ids.value[index] as string, target)) ? props.run.flash?.kind : null,
+        reducedMotion: reducedMotion.value,
+      },
       selectable: false,
       focusable: false,
       deletable: false,
@@ -275,6 +285,10 @@ watch(() => props.focusRequest, (request) => {
       :show-interactive="false"
       position="bottom-right"
     />
+
+    <template #edge-flow="edgeProps">
+      <FlowEdge v-bind="edgeProps" />
+    </template>
 
     <template #node-inputtext>
       <InputNode
