@@ -69,8 +69,9 @@ export async function postRun(request: RunRequest): Promise<RunResponse> {
   try {
     body = await response.json()
   } catch (error) {
-    const aborted = signal.aborted || (error instanceof DOMException && (error.name === 'AbortError' || error.name === 'TimeoutError'))
-    throw new RunFailure(aborted ? 'network' : 'unexpected')
+    const transportFailure = signal.aborted || error instanceof TypeError ||
+      (error instanceof DOMException && (error.name === 'AbortError' || error.name === 'TimeoutError'))
+    throw new RunFailure(transportFailure ? 'network' : 'unexpected')
   }
   if (response.status === 422) {
     if (response.headers.get('content-type')?.split(';')[0] === 'application/problem+json' && isRunProblem(body)) {

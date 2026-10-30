@@ -77,6 +77,20 @@ describe('Run failure classification and success guard', () => {
     await expect(postRun(request)).rejects.toMatchObject({ kind: 'network', message: "Couldn't reach the server." })
     expect(fetch).toHaveBeenCalledTimes(1)
   })
+  it.each([
+    new TypeError('terminated'),
+    new DOMException('aborted', 'AbortError'),
+    new DOMException('timeout', 'TimeoutError'),
+  ])('classifies response-body transport failure as unreachable: %s', async error => {
+    const response = new Response(null, { status: 200 })
+    vi.spyOn(response, 'json').mockRejectedValue(error)
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((_url, init: RequestInit) => {
+      expect(init.signal?.aborted).toBe(false)
+      return Promise.resolve(response)
+    }))
+    await expect(postRun(request)).rejects.toMatchObject({ kind: 'network', message: "Couldn't reach the server." })
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
   it.each([200, 422])('does not classify malformed JSON on %s as unreachable', async status => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{', { status })))
     await expect(postRun(request)).rejects.toMatchObject({ kind: 'unexpected' })
