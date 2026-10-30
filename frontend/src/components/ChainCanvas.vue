@@ -317,7 +317,7 @@ watch(() => props.focusRequest, (request) => {
     :edges-focusable="false"
     :nodes-connectable="false"
     :min-zoom="0.3"
-    attribution-position="bottom-left"
+    :pro-options="{ hideAttribution: true }"
     @keydown="onKeydown"
     @keyup="onKeyup"
     @node-drag-start="onNodeDragStart"
@@ -402,7 +402,6 @@ watch(() => props.focusRequest, (request) => {
   --xy-node-background-color: transparent;
   --xy-node-boxshadow-hover: none;
   --xy-node-boxshadow-selected: none;
-  --xy-attribution-background-color: transparent;
   min-height: 0;
 }
 
@@ -415,16 +414,6 @@ watch(() => props.focusRequest, (request) => {
   color: var(--text-on-dark);
   font-size: var(--text-sm);
   pointer-events: none;
-}
-
-/* A 24px target (WCAG 2.5.8), away from the zoom controls in the other corner. */
-.chain-canvas .vue-flow__attribution a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.5rem;
-  padding: 0 0.25rem;
-  color: var(--muted-on-dark);
-  font-size: var(--text-sm);
 }
 
 /* Our cards draw their own border; Vue Flow's wrapper only positions them. */
