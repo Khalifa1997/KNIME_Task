@@ -135,3 +135,81 @@ textarea {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Nodes: light cards on the dark canvas. A yellow top edge for Steps, grey for Input text and Output. */
+.node {
+  width: 260px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text);
+  color-scheme: light;
+  text-align: left;
+}
+
+.node--io {
+  width: 280px;
+  border-top-color: #8a8a99;
+}
+
+.node__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.node__result {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.node__result--hint {
+  color: var(--muted);
+  font-family: inherit;
+}
+
+/* Results that may no longer match the Chain. */
+.is-dimmed {
+  opacity: 0.7;
+}
+
+/* Status */
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.status__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4ade80;
+}
+
+.status[data-state='idle'] .status__dot,
+.status[data-state='changed'] .status__dot {
+  background: var(--muted-on-dark);
+}
+
+.status[data-state='running'] .status__dot {
+  background: var(--accent);
+}
+
+.status[data-state='failed'] {
+  color: #ff8a80;
+  font-weight: 700;
+}
+
+.status[data-state='failed'] .status__dot {
+  background: currentColor;
+}

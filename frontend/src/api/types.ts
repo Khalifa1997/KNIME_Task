@@ -34,3 +34,21 @@ export interface Metadata {
   limits: Limits
   transformations: TransformationMeta[]
 }
+
+export type FieldValue = string | number | boolean | null
+
+export interface StepRequest {
+  id: string
+  transformationId: string
+  values: Record<string, FieldValue>
+}
+
+export interface RunRequest {
+  inputText: string
+  steps: StepRequest[]
+}
+
+export interface RunResponse {
+  output: string
+  steps: { id: string; output: string }[]
+}

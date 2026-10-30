@@ -1,9 +1,23 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { useEventListener, useMediaQuery } from '@vueuse/core'
 import { fetchMetadata } from './api/metadata'
+import { postRun } from './api/run'
 import type { Metadata } from './api/types'
+import ChainCanvas from './components/ChainCanvas.vue'
+import { PHONE_QUERY, type Layout } from './layout'
+import { createRunState, executeRun, requestOf, runStatus, type Chain } from './run'
 
 const metadata = ref<Metadata | null>(null)
+const chain = reactive<Chain>({ inputText: '', steps: [] })
+const isPhone = useMediaQuery(PHONE_QUERY)
+const layout = reactive<Layout>({
+  mode: isPhone.value ? 'phone' : 'desktop',
+  positions: {},
+  viewport: null,
+})
+const run = reactive(createRunState())
+const canvas = ref<InstanceType<typeof ChainCanvas> | null>(null)
 
 onMounted(async () => {
   try {
@@ -11,6 +25,45 @@ onMounted(async () => {
   } catch (error) {
     // The loading and error screen comes with the metadata gate.
     console.error(error)
+  }
+})
+
+// Crossing the breakpoint keeps the Chain but lays it out afresh for the new mode.
+watch(isPhone, (phone) => {
+  layout.mode = phone ? 'phone' : 'desktop'
+  layout.positions = {}
+  layout.viewport = null
+})
+
+const canAddStep = computed(
+  () => metadata.value !== null && chain.steps.length < metadata.value.limits.maxSteps,
+)
+
+async function addStep(transformationId: string) {
+  const meta = metadata.value?.transformations.find((t) => t.id === transformationId)
+  if (!meta || !canAddStep.value) return
+  const values = Object.fromEntries(meta.fields.map((field) => [field.name, field.defaultValue]))
+  const id = crypto.randomUUID()
+  chain.steps.push({ id, transformationId, values })
+  await nextTick()
+  await canvas.value?.reveal(id)
+}
+
+const status = computed(() => runStatus(run, requestOf(chain)))
+const statusState = computed(() => {
+  if (run.status === 'ok') return status.value.dimmed ? 'changed' : 'ok'
+  return run.status
+})
+
+function startRun() {
+  void executeRun(run, chain, postRun)
+}
+
+// Ctrl/⌘+Enter runs the Chain from anywhere, including inside a Field.
+useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault()
+    startRun()
   }
 })
 </script>
@@ -44,7 +97,9 @@ onMounted(async () => {
             <button
               type="button"
               class="chip"
+              :disabled="!canAddStep"
               :aria-describedby="`palette-description-${transformation.id}`"
+              @click="addStep(transformation.id)"
             >
               {{ transformation.label }}
             </button>
@@ -55,8 +110,46 @@ onMounted(async () => {
           </li>
         </ul>
       </section>
+      <div
+        v-if="metadata"
+        class="run-bar"
+      >
+        <p
+          class="status"
+          role="status"
+          :data-state="statusState"
+        >
+          <span
+            class="status__dot"
+            aria-hidden="true"
+          />{{ status.text }}
+        </p>
+        <button
+          type="button"
+          class="btn btn--primary"
+          :aria-disabled="run.status === 'running'"
+          aria-keyshortcuts="Control+Enter Meta+Enter"
+          @click="startRun"
+        >
+          Run
+        </button>
+      </div>
     </header>
-    <main class="workspace" />
+    <main class="workspace">
+      <ChainCanvas
+        v-if="metadata"
+        ref="canvas"
+        :chain="chain"
+        :layout="layout"
+        :transformations="metadata.transformations"
+        :max-input-length="metadata.limits.maxInputLength"
+        :run="run"
+        :dimmed="status.dimmed"
+        @update:input-text="chain.inputText = $event"
+        @update:positions="layout.positions = { ...layout.positions, ...$event }"
+        @update:viewport="layout.viewport = $event"
+      />
+    </main>
   </div>
 </template>
 
@@ -113,7 +206,34 @@ onMounted(async () => {
   list-style: none;
 }
 
+.run-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
 .workspace {
+  display: grid;
   min-height: 0;
+}
+
+@media (max-width: 799px) {
+  .run-bar {
+    justify-content: space-between;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  /* The Add Step buttons stay in one row and scroll sideways. */
+  .palette {
+    flex: 1 1 100%;
+  }
+
+  .palette__list {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
 }
 </style>
