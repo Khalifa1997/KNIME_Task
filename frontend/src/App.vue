@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { useEventListener, useMediaQuery } from '@vueuse/core'
+import { onKeyStroke, useMediaQuery } from '@vueuse/core'
 import { fetchMetadata } from './api/metadata'
 import { postRun } from './api/run'
 import type { Metadata } from './api/types'
@@ -39,14 +39,13 @@ const canAddStep = computed(
   () => metadata.value !== null && chain.steps.length < metadata.value.limits.maxSteps,
 )
 
-async function addStep(transformationId: string) {
+function addStep(transformationId: string) {
   const meta = metadata.value?.transformations.find((t) => t.id === transformationId)
   if (!meta || !canAddStep.value) return
   const values = Object.fromEntries(meta.fields.map((field) => [field.name, field.defaultValue]))
   const id = crypto.randomUUID()
   chain.steps.push({ id, transformationId, values })
-  await nextTick()
-  await canvas.value?.reveal(id)
+  nextTick(() => canvas.value?.reveal(id))
 }
 
 const status = computed(() => runStatus(run, requestOf(chain)))
@@ -60,8 +59,8 @@ function startRun() {
 }
 
 // Ctrl/⌘+Enter runs the Chain from anywhere, including inside a Field.
-useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+onKeyStroke('Enter', (event) => {
+  if (event.ctrlKey || event.metaKey) {
     event.preventDefault()
     startRun()
   }

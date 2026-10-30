@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { promiseTimeout, useMediaQuery } from '@vueuse/core'
+import { computed, nextTick, ref, watch } from 'vue'
+import { until, usePreferredReducedMotion } from '@vueuse/core'
 import {
   Background,
   Controls,
@@ -48,7 +48,8 @@ const FRAME_PADDING = '48px'
 // and <VueFlowProvider> casts its absent boolean props to false (no dragging, no focusable nodes).
 const { fitView, setViewport, setCenter, getViewport, getNode } = setupVueFlow()
 const initialized = useNodesInitialized()
-const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+const motionPreference = usePreferredReducedMotion()
+const reducedMotion = computed(() => motionPreference.value === 'reduce')
 
 const labelOf = (transformationId: string) =>
   props.transformations.find((t) => t.id === transformationId)?.label ?? transformationId
@@ -132,9 +133,8 @@ watch(initialized, (ready) => {
 
 watch(
   () => props.layout.mode,
-  async () => {
-    await promiseTimeout(50)
-    frame()
+  () => {
+    nextTick(() => frame())
   },
 )
 
@@ -151,9 +151,8 @@ function onMoveEnd({ viewport }: { viewport: Viewport }) {
 
 // Pans to a node, keeping the zoom, and moves focus to it.
 async function reveal(id: string) {
-  for (let attempt = 0; attempt < 20 && !getNode(id)?.measured?.width; attempt++) {
-    await promiseTimeout(25)
-  }
+  // Gives up quietly after half a second; the fallbacks below cover an unmeasured node.
+  await until(() => getNode(id)?.measured?.width).toBeTruthy({ timeout: 500 })
   const node = getNode(id)
   if (!node) return
   const width = node.measured?.width ?? 260
