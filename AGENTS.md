@@ -12,7 +12,7 @@ Rules:
 1. Everything produced on the frontend **MUST** be accessible and responsive.
 2. All Vue components **MUST** be written in Composition API and use Typescript
 3. **Never** commit on your own
-4. **Never** create git worktrees, clones or copies of the project in another folder. Work only in this repository, switching branches here, so the human can test the changes from this folder.
+4. Git worktrees are allowed now and in future, with only one writer per worktree. Work only in your assigned checkout, preserve unrelated edits in the main checkout, and leave review branches/worktrees available for human review. **Never** create independent clones or copies of the project in another folder.
 5. **Never** use VueUse's `promiseTimeout` (or any fixed delay) to wait for the DOM or a component. Wait for the thing itself (`until(...)`, a `watch`) or use `nextTick`.
 6. Use `nextTick` in its callback form, `nextTick(() => { ... })`, not `await nextTick()`.
 7. Keep Vue render bindings simple: move collection lookups (`find`, `findIndex`), filtering, sorting, and repeated/non-trivial derived expressions into named `computed` values in `<script setup>`, then pass the resolved values to components. For slot- or loop-specific data, use a computed lookup keyed by a stable id or computed display items. Do not merely hide repeated render-time lookups in helper functions. Simple property access, indexing, and presentation conditionals can stay in templates; event handlers may perform action-specific lookups.
