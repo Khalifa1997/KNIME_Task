@@ -1,0 +1,20 @@
+{
+  "type": "about:blank",
+  "status": 422,
+  "title": "Chain could not run",
+  "detail": "2 problems stop the Chain from running.",
+  "errors": [
+    {
+      "stepId": "11111111-1111-4111-8111-111111111111",
+      "field": "search",
+      "code": "required",
+      "detail": "Search is required."
+    },
+    {
+      "stepId": "22222222-2222-4222-8222-222222222222",
+      "field": "search",
+      "code": "required",
+      "detail": "Search is required."
+    }
+  ]
+}

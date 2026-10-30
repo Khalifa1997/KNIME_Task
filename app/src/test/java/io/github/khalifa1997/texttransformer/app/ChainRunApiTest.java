@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -33,6 +35,19 @@ class ChainRunApiTest {
                 .hasContentTypeCompatibleWith(MediaType.APPLICATION_JSON)
                 .bodyJson()
                 .isStrictlyEqualTo(new ClassPathResource("contract/post-chain-run.200.json"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"mixed-errors", "two-broken-steps", "result-too-long", "too-many-steps"})
+    void rejectsWithEveryProblemAndNoPartialResultsAsInTheContract(String scenario) throws IOException {
+        assertThat(mvc.post()
+                        .uri("/api/chain/run")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(contract("post-chain-run." + scenario + ".request.json")))
+                .hasStatus(422)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson()
+                .isStrictlyEqualTo(new ClassPathResource("contract/post-chain-run." + scenario + ".422.json"));
     }
 
     @Test

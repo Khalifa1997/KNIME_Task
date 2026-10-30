@@ -1,0 +1,160 @@
+{
+  "inputText": "hello",
+  "steps": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000007",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000008",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000009",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000012",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000013",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000014",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000015",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000016",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000017",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000018",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000019",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000020",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000021",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000022",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000023",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000024",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000025",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000026",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000027",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000028",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000029",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000030",
+      "transformationId": "uppercase",
+      "values": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000031",
+      "transformationId": "uppercase",
+      "values": {}
+    }
+  ]
+}
