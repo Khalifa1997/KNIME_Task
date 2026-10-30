@@ -1,0 +1,38 @@
+package io.github.khalifa1997.texttransformer.core;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+class ChainRunnerTest {
+
+    private final ChainRunner runner = new ChainRunner(TransformationRegistry.builtIn());
+
+    private static StepInput step(String transformationId) {
+        return new StepInput(transformationId, Map.of());
+    }
+
+    @Test
+    void anEmptyChainOutputsTheInputText() {
+        assertThat(runner.run("Hello", List.of()))
+                .isEqualTo(new RunResult.Completed("Hello", List.of()));
+    }
+
+    @Test
+    void eachStepReceivesThePreviousStepsResult() {
+        var result = runner.run("Hello World", List.of(step("uppercase"), step("lowercase")));
+
+        assertThat(result)
+                .isEqualTo(new RunResult.Completed("hello world", List.of("HELLO WORLD", "hello world")));
+    }
+
+    @Test
+    void theOutputIsTheLastStepsResult() {
+        var result = runner.run("abc", List.of(step("lowercase"), step("uppercase")));
+
+        assertThat(result).isInstanceOfSatisfying(
+                RunResult.Completed.class, completed -> assertThat(completed.output()).isEqualTo("ABC"));
+    }
+}

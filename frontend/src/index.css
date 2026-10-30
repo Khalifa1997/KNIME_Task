@@ -17,8 +17,12 @@
   --line: #6e6e7b;
   /* Two-tone, so it shows on dark surfaces and on white cards alike. */
   --focus-ring: 0 0 0 2px #1b1f24, 0 0 0 4px #ffd60a;
-  --radius: 8px;
-  --radius-sm: 6px;
+  --radius: 0.5rem;
+  --radius-sm: 0.25rem;
+  /* Text sizes in rem, so they follow the browser font size; 0.75, 1 and 1.25rem are 12, 16 and 20px at the default. */
+  --text-sm: 0.75rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
   --font-mono: ui-monospace, monospace;
 
   color-scheme: dark;
@@ -62,9 +66,9 @@ textarea {
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 8px 18px;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: transparent;
@@ -80,10 +84,10 @@ textarea {
 }
 
 .chip {
-  min-height: 36px;
-  padding: 6px 12px;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 100vmax;
   background: #1d1d23;
   color: var(--text-on-dark);
   white-space: nowrap;
@@ -102,8 +106,8 @@ textarea {
 .icon-btn {
   display: inline-grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 1.75rem;
+  height: 1.75rem;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: none;
@@ -122,16 +126,96 @@ textarea {
   .btn,
   .chip,
   .icon-btn {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
   }
 }
 
 .visually-hidden {
   position: absolute;
+  /* stylelint-disable-next-line declaration-property-unit-disallowed-list -- a 1px clip box, not a size */
   width: 1px;
+  /* stylelint-disable-next-line declaration-property-unit-disallowed-list -- a 1px clip box, not a size */
   height: 1px;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* Nodes: light cards on the dark canvas. A yellow top edge for Steps, grey for Input text and Output. */
+.node {
+  width: 16.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text);
+  color-scheme: light;
+  text-align: left;
+}
+
+.node--io {
+  width: 17.5rem;
+  border-top-color: #8a8a99;
+}
+
+.node__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: var(--text-md);
+}
+
+.node__result {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.node__result--hint {
+  color: var(--muted);
+  font-family: inherit;
+}
+
+/* Results that may no longer match the Chain. */
+.is-dimmed {
+  opacity: 0.7;
+}
+
+/* Status */
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.status__dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: #4ade80;
+}
+
+.status[data-state='idle'] .status__dot,
+.status[data-state='changed'] .status__dot {
+  background: var(--muted-on-dark);
+}
+
+.status[data-state='running'] .status__dot {
+  background: var(--accent);
+}
+
+.status[data-state='failed'] {
+  color: #ff8a80;
+  font-weight: 700;
+}
+
+.status[data-state='failed'] .status__dot {
+  background: currentColor;
 }

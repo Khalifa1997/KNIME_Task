@@ -1,0 +1,7 @@
+{
+  "output": "hello world",
+  "steps": [
+    { "id": "3f2b8c1e-6a4d-4e0b-9d57-1c2a7e5f9b01", "output": "HELLO WORLD" },
+    { "id": "8d1e4a7c-2b95-4c36-a0f8-5e9d3b6c7a02", "output": "hello world" }
+  ]
+}

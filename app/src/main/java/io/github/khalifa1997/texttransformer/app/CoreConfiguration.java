@@ -1,5 +1,6 @@
 package io.github.khalifa1997.texttransformer.app;
 
+import io.github.khalifa1997.texttransformer.core.ChainRunner;
 import io.github.khalifa1997.texttransformer.core.Limits;
 import io.github.khalifa1997.texttransformer.core.TransformationRegistry;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +13,11 @@ class CoreConfiguration {
     @Bean
     TransformationRegistry transformationRegistry() {
         return TransformationRegistry.builtIn();
+    }
+
+    @Bean
+    ChainRunner chainRunner(TransformationRegistry registry) {
+        return new ChainRunner(registry);
     }
 
     @Bean
