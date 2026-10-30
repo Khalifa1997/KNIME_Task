@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { shallowRef } from 'vue'
 import { Handle, type Position } from '@xyflow/vue'
+import { useNodeWrapperFocus } from '../nodeFocus'
 import { titleIdOf } from '../layout'
 import type { FieldMeta, FieldValue } from '../api/types'
 import FieldInput from './FieldInput.vue'
@@ -27,11 +29,25 @@ const emit = defineEmits<{
   'delete-step': [stepId: string]
   'move-step': [stepId: string, direction: -1 | 1]
 }>()
+
+const focusWrapper = useNodeWrapperFocus('root')
+const firstField = shallowRef<InstanceType<typeof FieldInput> | null>(null)
+
+function focus(nodeOnly = false) {
+  if (firstField.value && !nodeOnly) {
+    firstField.value.focus()
+  } else {
+    focusWrapper()
+  }
+}
+
+defineExpose({ focus })
 </script>
 
 <template>
   <!-- Vue Flow's node wrapper is the group, named by this node's heading. -->
   <div
+    ref="root"
     class="node"
     :class="{ 'node--invalid': invalid, 'errors-dimmed': dimmed }"
   >
@@ -91,8 +107,9 @@ const emit = defineEmits<{
       </p>
     </div>
     <FieldInput
-      v-for="field in fields"
+      v-for="(field, fieldIndex) in fields"
       :key="field.name"
+      :ref="(el) => { if (fieldIndex === 0) firstField = el as InstanceType<typeof FieldInput> | null }"
       :step-id="stepId"
       :field="field"
       :errors="fieldErrors[field.name]"

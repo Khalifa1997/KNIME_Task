@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import type { FieldMeta, FieldValue } from '../api/types'
 
 const props = defineProps<{
@@ -12,6 +12,8 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:value': [value: FieldValue] }>()
 
 const inputId = computed(() => `field-${props.stepId}-${props.field.name}`)
+
+const control = useTemplateRef<HTMLElement>('control')
 
 const errorId = computed(() => `${inputId.value}-errors`)
 const hasErrors = computed(() => Boolean(props.errors?.length))
@@ -38,6 +40,8 @@ function onBooleanInput(event: Event) {
 function onSelectInput(event: Event) {
   emit('update:value', (event.target as HTMLSelectElement).value)
 }
+
+defineExpose({ focus: () => control.value?.focus({ preventScroll: true }) })
 </script>
 
 <template>
@@ -51,6 +55,7 @@ function onSelectInput(event: Event) {
     <input
       v-if="field.type === 'text'"
       :id="inputId"
+      ref="control"
       :aria-invalid="hasErrors ? true : undefined"
       :aria-describedby="hasErrors ? errorId : undefined"
       class="input nodrag nowheel nokey"
@@ -63,6 +68,7 @@ function onSelectInput(event: Event) {
     <input
       v-else-if="field.type === 'integer'"
       :id="inputId"
+      ref="control"
       :aria-invalid="hasErrors ? true : undefined"
       :aria-describedby="hasErrors ? errorId : undefined"
       class="input nodrag nowheel nokey"
@@ -77,6 +83,7 @@ function onSelectInput(event: Event) {
     <input
       v-else-if="field.type === 'boolean'"
       :id="inputId"
+      ref="control"
       :aria-invalid="hasErrors ? true : undefined"
       :aria-describedby="hasErrors ? errorId : undefined"
       class="checkbox nodrag nowheel nokey"
@@ -89,6 +96,7 @@ function onSelectInput(event: Event) {
     <select
       v-else
       :id="inputId"
+      ref="control"
       :aria-invalid="hasErrors ? true : undefined"
       :aria-describedby="hasErrors ? errorId : undefined"
       class="input nodrag nowheel nokey"

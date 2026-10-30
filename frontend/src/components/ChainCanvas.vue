@@ -193,6 +193,14 @@ function onMoveEnd({ viewport }: { viewport: Viewport }) {
   emit('update:viewport', { x: viewport.x, y: viewport.y, zoom: viewport.zoom })
 }
 
+// Each node component exposes its own focus, so no DOM lookups by id.
+const nodeHandles = new Map<string, { focus: (nodeOnly?: boolean) => void }>()
+
+function setNodeHandle(id: string, instance: unknown) {
+  if (instance) nodeHandles.set(id, instance as { focus: (nodeOnly?: boolean) => void })
+  else nodeHandles.delete(id)
+}
+
 // Pans to a node, keeping the zoom, and moves focus to it.
 async function reveal(id: string, nodeOnly = false) {
   // Gives up quietly after half a second; the fallbacks below cover an unmeasured node.
@@ -205,13 +213,7 @@ async function reveal(id: string, nodeOnly = false) {
     zoom: getViewport().zoom,
     duration: duration(),
   })
-  const element = document.querySelector<HTMLElement>(`.vue-flow__node[data-id="${id}"]`)
-  const firstField = element?.querySelector<HTMLElement>('.field input, .field select')
-  if (firstField && !nodeOnly) {
-    firstField.focus({ preventScroll: true })
-  } else {
-    element?.focus({ preventScroll: true })
-  }
+  nodeHandles.get(id)?.focus(nodeOnly)
 }
 
 function focusedStep(event: KeyboardEvent) {
@@ -239,7 +241,7 @@ function onKeyup(event: KeyboardEvent) {
 function retainStepFocus(id: string) {
   nextTick(() => {
     if (!(document.activeElement instanceof HTMLButtonElement) || document.activeElement.disabled) {
-      document.querySelector<HTMLElement>(`.vue-flow__node[data-id="${id}"]`)?.focus({ preventScroll: true })
+      nodeHandles.get(id)?.focus(true)
     }
   })
 }
@@ -275,6 +277,7 @@ defineExpose({ reveal, retainStepFocus })
 
     <template #node-inputtext>
       <InputNode
+        :ref="(instance) => setNodeHandle(INPUT_ID, instance)"
         :text="chain.inputText"
         :errors="inputErrors"
         :suppress-errors="run.status === 'failed'"
@@ -288,6 +291,7 @@ defineExpose({ reveal, retainStepFocus })
     <template #node-step="{ id }">
       <StepNode
         v-if="stepPropsById[id]"
+        :ref="(instance) => setNodeHandle(id, instance)"
         v-bind="stepPropsById[id]"
         :result="run.results[id]"
         :dimmed="dimmed"
@@ -301,6 +305,7 @@ defineExpose({ reveal, retainStepFocus })
 
     <template #node-outputtext>
       <OutputNode
+        :ref="(instance) => setNodeHandle(OUTPUT_ID, instance)"
         :output="run.output"
         :dimmed="dimmed"
         :target-position="ends.target"

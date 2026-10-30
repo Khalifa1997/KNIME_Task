@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Handle, type Position } from '@xyflow/vue'
+import { useNodeWrapperFocus } from '../nodeFocus'
 import { INPUT_ID, titleIdOf } from '../layout'
 
 const props = defineProps<{
@@ -22,11 +23,16 @@ const over = computed(() => props.text.length > props.maxInputLength)
 function onInput(event: Event) {
   emit('update:text', (event.target as HTMLTextAreaElement).value)
 }
+
+const focus = useNodeWrapperFocus('root')
+
+defineExpose({ focus })
 </script>
 
 <template>
   <!-- Vue Flow's node wrapper is the group, named by this node's heading. -->
   <div
+    ref="root"
     class="node node--io"
     :class="{ 'node--invalid': errors.length > 0 && !suppressErrors }"
   >

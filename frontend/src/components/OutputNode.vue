@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Handle, type Position } from '@xyflow/vue'
+import { useNodeWrapperFocus } from '../nodeFocus'
 import { OUTPUT_ID, titleIdOf } from '../layout'
 
 defineProps<{
@@ -8,11 +9,18 @@ defineProps<{
   dimmed: boolean
   targetPosition: Position
 }>()
+
+const focus = useNodeWrapperFocus('root')
+
+defineExpose({ focus })
 </script>
 
 <template>
   <!-- Vue Flow's node wrapper is the group, named by this node's heading. -->
-  <div class="node node--io">
+  <div
+    ref="root"
+    class="node node--io"
+  >
     <!-- Edges are drawn for the user, never by them, so the handles are only decoration. -->
     <Handle
       aria-hidden="true"
