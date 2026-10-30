@@ -250,10 +250,8 @@ onKeyStroke('Enter', (event) => {
         </button>
       </section>
       <ChainCanvas
-        v-if="metadata"
-        :focus-request="focusRequest"
         v-if="readyMetadata"
-        ref="canvas"
+        :focus-request="focusRequest"
         :chain="chain"
         :layout="layout"
         :transformations="readyMetadata.transformations"

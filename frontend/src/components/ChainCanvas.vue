@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, shallowRef, watch } from 'vue'
-import { until, usePreferredReducedMotion } from '@vueuse/core'
+import { until, usePreferredReducedMotion, useWindowSize } from '@vueuse/core'
 import {
   Background,
   Controls,
@@ -59,6 +59,7 @@ const { fitView, setViewport, setCenter, getViewport, getNode } = setupVueFlow()
 const initialized = useNodesInitialized()
 const motionPreference = usePreferredReducedMotion()
 const reducedMotion = computed(() => motionPreference.value === 'reduce')
+const { width: windowWidth } = useWindowSize()
 
 const inputErrors = computed(() => props.run.errors.filter((error) => error.stepId === null).map((error) => error.detail))
 const errorsByStepId = computed(() => {
@@ -162,11 +163,19 @@ function frame() {
     void setViewport(saved)
   } else if (props.layout.mode === 'phone') {
     // A column fits the width at 100% zoom and scrolls down.
-    void setViewport({ x: (window.innerWidth - 260) / 2, y: 16, zoom: 1 })
+    const nodeWidth = getNode(INPUT_ID)?.measured?.width ?? 280
+    setViewport({ x: (windowWidth.value - nodeWidth) / 2, y: 16, zoom: 1 })
   } else {
     void fitView({ padding: FRAME_PADDING, maxZoom: 1, duration: duration() })
   }
 }
+
+// A resize within phone widths keeps the column where it is relative to the centre, panned or not.
+watch(windowWidth, (width, previous) => {
+  if (props.layout.mode !== 'phone' || !initialized.value) return
+  const viewport = getViewport()
+  setViewport({ ...viewport, x: viewport.x + (width - previous) / 2 })
+})
 
 // fitView needs measured nodes, so frame again once they are.
 let framed = false
