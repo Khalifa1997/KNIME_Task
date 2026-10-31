@@ -1,0 +1,94 @@
+# Decisions
+
+The main choices behind Text Transformer, and why I made them. The words used here (Transformation, Step, Chain, Content check, …) are defined in [`GLOSSARY.md`](../GLOSSARY.md). The full research notes, measurements and screenshots of every design are on the [`research`](https://github.com/Khalifa1997/KNIME_Task/tree/research/docs/research) branch.
+
+## 1. The editor: a node canvas
+
+I built ten throwaway prototypes of the same editor before choosing one: a **node canvas** (n8n style), a **recipe** (CyberChef), a **pipeline** of cards, **Scratch-style blocks**, a **command bar**, a **conveyor belt**, **track changes**, a **debugger**, a **spreadsheet** and **example first**. Screenshots of all ten: [`frontend-ux-screenshots.md`](https://github.com/Khalifa1997/KNIME_Task/blob/research/docs/research/frontend-ux-screenshots.md).
+
+**I chose the node canvas because it scales the furthest:**
+
+- **It can grow into a network.** A Chain is linear today, but a canvas can later show a node with more than one input or output, or a branch, without redesigning the UI. Every list-based design would need a rework.
+- **No long scrolling.** In a list, a long Chain means scrolling to reach the Output or the Step you want to edit. On a canvas the whole Chain fits on one screen.
+- **Reordering is direct.** Shift+drag one node onto another swaps them. A plain drag only moves a node, so users can lay the canvas out as they like.
+
+**What it costs:** it's the second-heaviest design (+56 KB brotli, about twice the load time of the recipe), and Vue Flow 2 is a pinned prerelease that needed one patch for touch dragging.
+
+**The runner-up was the recipe.** A scroll area of its own and a drag-and-drop package would have fixed its scrolling and reordering. But it's a list, so it can't grow into branches or nodes with several inputs or outputs.
+
+**Why not the others, in short:**
+- **Too complicated:** the command bar (typing a syntax isn't no-code), the blocks (Blockly alone adds about 156 KB, nearly three times the canvas), and the debugger.
+- **Too basic, or too much scrolling:** the pipeline, the spreadsheet and track changes.
+- **The conveyor belt** was the prettiest, but it makes users wait: the results arrive from the backend at once, and the animation then holds them back Step by Step.
+- **Example first** needs search logic in the backend, which is beyond this task.
+
+The Chain runs when you press **Run**, not on every keystroke. This was deliberate: there's no backend call per keystroke, and every problem is reported together at one moment.
+
+## 2. The backend: a thin Spring Boot layer
+
+The text processing is `core`, a plain Java 25 library with no Spring. `app` is a thin Spring Boot layer that exposes it over HTTP. I benchmarked the same endpoints in four frameworks, each calling the same Java library (5,000 POST requests, 50 at a time, in Docker; 500 for Go):
+
+| | Requests/sec | Average time | Idle memory |
+|---|---:|---:|---:|
+| **Spring Boot** | **10,011** | **4.7 ms** | 217 MB |
+| NestJS | 4,946 | 9.8 ms | 78 MB |
+| FastAPI | 767 | 65 ms | 146 MB |
+| Go | 149 | 321 ms | 7 MB |
+
+Spring Boot had twice the throughput of the next option because it is the only one that calls the Java library directly. The others need a bridge to Java:
+- Go started a new JVM for every request.
+- FastAPI was limited by Python's global interpreter lock.
+- NestJS's bridge corrupted emoji, which rules it out for a text tool.
+
+## 3. The Transformations
+
+Each Transformation has a real use. Most are modelled on the JavaScript `String` API, which web developers already know:
+
+| Transformation | JavaScript | Real use |
+|---|---|---|
+| Replace | `replaceAll()` | Fix a recurring typo, rename a product |
+| Append / Prepend | `concat()` | Add a suffix, prefix or signature |
+| Substring | `substring()` | Keep part of the text, such as a code |
+| Regex replace | `replace()` with a regex | Reformat dates or phone numbers |
+| Uppercase / Lowercase | `toUpperCase()` / `toLowerCase()` | Normalise text before comparing it |
+| Reverse | `split('').reverse().join('')` | Check palindromes, simple text puzzles |
+| Trim whitespace | `trim()` | Clean pasted input |
+| Mask | none | Hide card numbers or emails |
+| Base64 encode / decode | `btoa()` / `atob()` | Prepare text for URLs or headers |
+
+Unlike JavaScript, these Transformations treat an emoji as one character:
+- **Reverse** reverses whole characters (grapheme clusters), so emoji, flags and accented letters stay intact.
+- **Substring and Mask** count Unicode code points, so most emoji count as one.
+
+**Regex can't take the server down.** A user-written pattern with catastrophic backtracking (ReDoS) could keep the CPU busy for minutes. Java's regex engine has no timeout, so `core` adds these limits:
+- A 2-second deadline on each Regex replace Step.
+- Results are capped at 3,000 characters while they are built.
+- A pattern nested too deeply to run is reported as a Step error instead of crashing.
+- At most 30 Steps per Chain.
+
+One gap remains: 30 slow Regex replace Steps could still hold a request for about a minute.
+
+## 4. The Content check
+
+The optional Content check screens the Input text with OpenAI's Moderation API before the Chain runs, and stops the run if hate, harassment, violence or another category is flagged. It's off by default. Text tools usually need to check what users type, especially if the results end up in front of other people (notes, embedded iframes).
+
+**OpenAI's moderation model is free.** Usage is capped only by rate limits per account tier ([model page](https://platform.openai.com/docs/models/omni-moderation-latest), checked 2026-10-31):
+
+| Tier | Requests per minute | Requests per day | Tokens per minute |
+|---|---:|---:|---:|
+| Free | 250 | 5,000 | 10,000 |
+| Build | 500 | no limit | 20,000 |
+| Launch | 2,000 | no limit | 250,000 |
+| Grow | 5,000 | no limit | 500,000 |
+
+It checks only the Input text, it sends that text to OpenAI, and if OpenAI can't be reached the run is refused rather than going ahead unchecked ([ADR 0001](adr/0001-content-check-outside-core.md)). If this became a full product, the same place in the backend is where I'd look at catching fraudulent data.
+
+## 5. Other decisions
+
+- **The backend is the source of truth.** The frontend builds every Field from the backend's metadata, so a new Transformation needs no frontend change.
+- **All errors arrive at once,** in one `422`, each with a stable `code`.
+- **One jar.** Maven builds the Vue app into the Spring Boot jar.
+- **Maven's Enforcer keeps Spring out of `core`.**
+- **ESLint only, no oxlint,** so Vue templates and the accessibility rules are linted.
+- **The Saved session keeps invalid values** instead of silently fixing them.
+- **No CI.** Tests are run by hand.

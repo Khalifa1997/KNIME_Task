@@ -157,6 +157,7 @@ Other trade-offs I accepted on purpose: ESLint alone (no oxlint) so Vue template
 
 Where to read more:
 
+- **The decisions:** [`docs/decisions.md`](docs/decisions.md): why the canvas won over nine other designs, the backend benchmark, the Transformations, regex safety and the Content check.
 - **The map:** [#1 Text Transformer MVP: build-ready plan](https://github.com/Khalifa1997/KNIME_Task/issues/1), the index of every decision. The [spec (#21)](https://github.com/Khalifa1997/KNIME_Task/issues/21) summarises it as user stories and implementation decisions.
 - **The tickets:** decisions [#2](https://github.com/Khalifa1997/KNIME_Task/issues/2) to [#19](https://github.com/Khalifa1997/KNIME_Task/issues/19), implementation [#22](https://github.com/Khalifa1997/KNIME_Task/issues/22) to [#36](https://github.com/Khalifa1997/KNIME_Task/issues/36) (all [issues](https://github.com/Khalifa1997/KNIME_Task/issues?q=is%3Aissue)).
 - **Branches:** [`prototype`](https://github.com/Khalifa1997/KNIME_Task/tree/prototype) holds the throwaway prototypes (`prototypes/canvas-core-flow`, `prototypes/vue-flow-touch-repro`) and is never merged; [`research`](https://github.com/Khalifa1997/KNIME_Task/tree/research) holds the research notes (`docs/research/`).
