@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { getBezierPath, type EdgeProps } from '@xyflow/vue'
+import { EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/vue'
+import ContentCheckBadge from './ContentCheckBadge.vue'
 
 // How long the yellow fill takes to draw along one edge; the next edge starts when it ends.
 const FILL_MS = 300
@@ -13,19 +14,25 @@ interface FlowEdgeData {
   reducedMotion: boolean
 }
 
-const props = defineProps<EdgeProps>()
+// Only the edge leaving the Input text carries the Content check badge.
+const props = defineProps<EdgeProps & { contentCheck?: { on: boolean; available: boolean } | null }>()
+const emit = defineEmits<{ 'toggle-content-check': [on: boolean] }>()
 
 // Vue Flow types an edge's data as a generic record.
 const motion = computed(() => props.data as unknown as FlowEdgeData)
 
-const path = computed(() => getBezierPath({
+const bezier = computed(() => getBezierPath({
   sourceX: props.sourceX,
   sourceY: props.sourceY,
   sourcePosition: props.sourcePosition,
   targetX: props.targetX,
   targetY: props.targetY,
   targetPosition: props.targetPosition,
-})[0])
+}))
+const path = computed(() => bezier.value[0])
+// Vue Flow's own midpoint of the edge, in its pixel coordinates.
+const badgeTransform = computed(() =>
+  `translate(-50%, -50%) translate(${bezier.value[1]}px, ${bezier.value[2]}px)`)
 
 const fillDelay = computed(() => `${motion.value.index * FILL_MS}ms`)
 </script>
@@ -51,9 +58,24 @@ const fillDelay = computed(() => `${motion.value.index * FILL_MS}ms`)
     class="flow-edge__flash"
     :class="`flow-edge__flash--${motion.flash}`"
   />
+  <EdgeLabelRenderer v-if="contentCheck">
+    <ContentCheckBadge
+      class="flow-edge__badge"
+      :style="{ transform: badgeTransform }"
+      :on="contentCheck.on"
+      :available="contentCheck.available"
+      @toggle="emit('toggle-content-check', $event)"
+    />
+  </EdgeLabelRenderer>
 </template>
 
 <style scoped>
+.flow-edge__badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
 .flow-edge__base {
   stroke-dasharray: 5;
   animation: flow 0.5s linear infinite;
