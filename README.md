@@ -125,6 +125,17 @@ cd frontend && npm ci && npm run dev              # Vite with hot reload on :517
 
 Open <http://localhost:5173>. If the backend runs on another port, set `API_PROXY_TARGET`, for example `API_PROXY_TARGET=http://localhost:9090 npm run dev`.
 
+### The Content check (optional)
+
+The Content check sends the Input text to OpenAI's Moderation API before a run. It needs an API key on the server, read from `OPENAI_API_KEY`; the key never reaches the browser. Without it, the OpenAI badge on the first line of the Chain shows as not available.
+
+```bash
+OPENAI_API_KEY=sk-... java -jar app/target/app.jar                       # or with spring-boot:run
+OPENAI_API_KEY=sk-... docker compose up --build                          # compose passes it through
+```
+
+On Render, set `OPENAI_API_KEY` under the service's **Environment**; [`render.yaml`](render.yaml) declares it without a value, so it is never committed.
+
 ## Test it
 
 ```bash

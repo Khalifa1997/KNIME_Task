@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Handle, type Position } from '@xyflow/vue'
+import { Handle, Position } from '@xyflow/vue'
+import ContentCheckBadge from './ContentCheckBadge.vue'
 import { useFocusRequest } from '../nodeFocus'
 import { INPUT_ID, titleIdOf, type FocusRequest } from '../layout'
 
@@ -18,6 +19,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{ 'update:text': [value: string]; 'update:contentCheck': [value: boolean] }>()
 
+// The Content check badge sits on the line leaving the Input text, whichever side that is.
+const badgeSide = computed(() => props.sourcePosition === Position.Bottom ? 'below' : 'beside')
+
 const count = computed(
   () => `${props.text.length.toLocaleString('en-US')} / ${props.maxInputLength.toLocaleString('en-US')}`,
 )
@@ -25,15 +29,6 @@ const over = computed(() => props.text.length > props.maxInputLength)
 
 function onInput(event: Event) {
   emit('update:text', (event.target as HTMLTextAreaElement).value)
-}
-
-function onContentCheck(event: Event) {
-  emit('update:contentCheck', (event.target as HTMLInputElement).checked)
-}
-
-function stopCanvasKey(event: KeyboardEvent) {
-  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) return
-  event.stopPropagation()
 }
 
 useFocusRequest('root', () => props.focusRequest)
@@ -70,32 +65,6 @@ useFocusRequest('root', () => props.focusRequest)
     >
       {{ count }}
     </p>
-    <div class="input-node__check">
-      <label
-        class="input-node__check-label"
-        for="content-check"
-      >
-        <input
-          id="content-check"
-          class="checkbox nodrag nowheel nokey"
-          type="checkbox"
-          role="switch"
-          :checked="contentCheck && contentCheckAvailable"
-          :disabled="!contentCheckAvailable"
-          :aria-describedby="contentCheckAvailable ? undefined : 'content-check-note'"
-          @keydown="stopCanvasKey"
-          @change="onContentCheck"
-        >
-        Check for harmful content (sends text to OpenAI)
-      </label>
-      <p
-        v-if="!contentCheckAvailable"
-        id="content-check-note"
-        class="input-node__note"
-      >
-        Not available: this server has no OpenAI API key.
-      </p>
-    </div>
     <div
       v-if="errors.length"
       id="input-errors"
@@ -109,6 +78,14 @@ useFocusRequest('root', () => props.focusRequest)
         {{ message }}
       </p>
     </div>
+    <!-- Inside the Input text node, so it comes right after the textarea in Tab order. -->
+    <ContentCheckBadge
+      class="input-node__badge nokey"
+      :class="`input-node__badge--${badgeSide}`"
+      :on="contentCheck"
+      :available="contentCheckAvailable"
+      @toggle="emit('update:contentCheck', $event)"
+    />
     <!-- Edges are drawn for the user, never by them, so the handles are only decoration. -->
     <Handle
       aria-hidden="true"
@@ -142,20 +119,26 @@ useFocusRequest('root', () => props.focusRequest)
   text-align: right;
 }
 
-.input-node__check {
-  margin-top: 0.5rem;
-  font-size: var(--text-sm);
+.node--io {
+  position: relative;
 }
 
-.input-node__check-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.75rem;
+/* 1.5rem past the handle: centred in the 50px desktop gap between nodes, on the edge. */
+.input-node__badge {
+  position: absolute;
+  z-index: 1;
 }
 
-.input-node__note {
-  color: var(--muted);
+.input-node__badge--beside {
+  top: 50%;
+  left: calc(100% + 1.5rem);
+  transform: translate(-50%, -50%);
+}
+
+.input-node__badge--below {
+  top: calc(100% + 1.5rem);
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .input-node__count--over {

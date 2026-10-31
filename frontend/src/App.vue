@@ -108,6 +108,11 @@ watch(contentCheckAvailable, (available) => {
   if (!available) chain.contentCheck = false
 })
 
+function setContentCheck(on: boolean) {
+  chain.contentCheck = on
+  announce(on ? 'Content check on.' : 'Content check off.')
+}
+
 const canAddStep = computed(
   () => readyMetadata.value !== null && chain.steps.length < readyMetadata.value.limits.maxSteps,
 )
@@ -379,7 +384,7 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
         @move-step="moveStep"
         @swap-steps="swapSteps"
         @update:input-text="chain.inputText = $event"
-        @update:content-check="chain.contentCheck = $event"
+        @update:content-check="setContentCheck"
         @update-field="(stepId, name, value) => {
           const step = chain.steps.find((candidate) => candidate.id === stepId)
           if (step) step.values[name] = value

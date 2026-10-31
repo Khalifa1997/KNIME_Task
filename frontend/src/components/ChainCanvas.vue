@@ -134,6 +134,8 @@ watch(
           targetPosition: ends.value.target,
           // Vue Flow never applies `ariaRole`, so the role goes in through domAttributes.
           domAttributes: { role: 'group', 'aria-labelledby': titleIdOf(id) },
+          // The Content check badge's tooltip reaches over the next node, so the Input text sits on top.
+          zIndex: id === INPUT_ID ? 1 : 0,
           data: {},
         }) as Node,
     )
