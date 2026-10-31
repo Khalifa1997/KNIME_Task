@@ -4,6 +4,7 @@ package io.github.khalifa1997.texttransformer.core;
 public enum ErrorCode {
     INPUT_TOO_LONG,
     TOO_MANY_STEPS,
+    INPUT_FLAGGED,
     UNKNOWN_TRANSFORMATION,
     REQUIRED,
     WRONG_TYPE,

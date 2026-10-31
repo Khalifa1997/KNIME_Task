@@ -1,11 +1,13 @@
 package io.github.khalifa1997.texttransformer.app;
 
+import io.github.khalifa1997.texttransformer.core.ContentCheckUnavailableException;
 import java.util.Comparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -63,6 +65,15 @@ class HttpProblemAdvice extends ResponseEntityExceptionHandler {
             }
         }
         return path.toString();
+    }
+
+    @ExceptionHandler(ContentCheckUnavailableException.class)
+    ResponseEntity<ProblemDetail> contentCheckUnavailable(ContentCheckUnavailableException exception) {
+        LOG.warn("Content check unavailable", exception);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                        "The Content check could not be reached, so nothing was run."));
     }
 
     @ExceptionHandler(Exception.class)

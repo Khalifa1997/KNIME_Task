@@ -3,3 +3,6 @@ services:
     build: .
     ports:
       - "8080:8080"
+    environment:
+      # Passed through from your shell or a git-ignored .env; leave unset to run without the Content check.
+      - OPENAI_API_KEY

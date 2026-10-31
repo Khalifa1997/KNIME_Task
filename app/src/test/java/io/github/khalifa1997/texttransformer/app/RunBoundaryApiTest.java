@@ -1,6 +1,7 @@
 package io.github.khalifa1997.texttransformer.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -31,7 +32,7 @@ class RunBoundaryApiTest {
 
     @Test
     void unexpectedFailureIsGenericAndTheRealExceptionIsLogged(CapturedOutput output) {
-        when(runner.run(anyString(), any())).thenThrow(new IllegalStateException("injected private failure"));
+        when(runner.run(anyString(), any(), anyBoolean())).thenThrow(new IllegalStateException("injected private failure"));
         assertThat(mvc.post().uri("/api/chain/run").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"inputText\":\"\",\"steps\":[]}"))
                 .hasStatus(500).hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
@@ -43,7 +44,7 @@ class RunBoundaryApiTest {
     void contentLimitsAreLeftToCore() {
         var input = "a".repeat(3001);
         var fieldText = "b".repeat(3001);
-        when(runner.run(anyString(), any())).thenAnswer(invocation -> {
+        when(runner.run(anyString(), any(), anyBoolean())).thenAnswer(invocation -> {
             assertThat((String) invocation.getArgument(0)).isEqualTo(input);
             List<StepInput> steps = invocation.getArgument(1);
             assertThat(steps).hasSize(31);
@@ -61,7 +62,7 @@ class RunBoundaryApiTest {
 
     @Test
     void shapeBoundaryPreservesRawFieldValuesForCore() {
-        when(runner.run(anyString(), any())).thenAnswer(invocation -> {
+        when(runner.run(anyString(), any(), anyBoolean())).thenAnswer(invocation -> {
             List<StepInput> steps = invocation.getArgument(1);
             var values = steps.getFirst().values();
             assertThat(values.get("integer")).isEqualTo(5);

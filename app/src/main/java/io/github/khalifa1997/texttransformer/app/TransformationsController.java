@@ -15,18 +15,23 @@ class TransformationsController {
 
     private final TransformationRegistry registry;
     private final Limits limits;
+    private final ContentCheckAvailability contentCheck;
 
-    TransformationsController(TransformationRegistry registry, Limits limits) {
+    TransformationsController(
+            TransformationRegistry registry, Limits limits, ContentCheckAvailability contentCheck) {
         this.registry = registry;
         this.limits = limits;
+        this.contentCheck = contentCheck;
     }
 
     @GetMapping("/api/transformations")
     Metadata transformations() {
-        return new Metadata(limits, registry.all().stream().map(TransformationJson::of).toList());
+        return new Metadata(
+                contentCheck, limits, registry.all().stream().map(TransformationJson::of).toList());
     }
 
-    record Metadata(Limits limits, List<TransformationJson> transformations) {}
+    record Metadata(
+            ContentCheckAvailability contentCheck, Limits limits, List<TransformationJson> transformations) {}
 
     record TransformationJson(String id, String label, String description, List<FieldJson> fields) {
 

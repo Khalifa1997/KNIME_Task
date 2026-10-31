@@ -1,0 +1,14 @@
+{
+  "type": "about:blank",
+  "status": 422,
+  "title": "Chain could not run",
+  "detail": "1 problem stops the Chain from running.",
+  "errors": [
+    {
+      "stepId": null,
+      "field": null,
+      "code": "input-flagged",
+      "detail": "Input text was flagged as harmful and wasn't run."
+    }
+  ]
+}

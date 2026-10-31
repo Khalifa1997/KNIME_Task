@@ -3,7 +3,7 @@
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /workspace
 COPY . .
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -ntp package
+RUN --mount=type=cache,target=/root/.m2 chmod +x mvnw && ./mvnw -B -ntp package
 
 # Run stage: only the JRE and the one jar, which serves the API and the built frontend.
 FROM eclipse-temurin:25-jre

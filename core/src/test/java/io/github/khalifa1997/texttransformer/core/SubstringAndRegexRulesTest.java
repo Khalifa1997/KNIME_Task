@@ -15,10 +15,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 /** The rules only Substring and Regex replace have, seen through the runner. */
 class SubstringAndRegexRulesTest {
 
-    private final ChainRunner runner = new ChainRunner(TransformationRegistry.builtIn());
+    private final ChainRunner runner = new ChainRunner(TransformationRegistry.builtIn(), text -> false);
 
     private RunResult run(String input, String id, Map<String, Object> values) {
-        return runner.run(input, List.of(new StepInput(id, values)));
+        return runner.run(input, List.of(new StepInput(id, values)), false);
     }
 
     private static RunResult.Rejected rejected(String field, ErrorCode errorCode, String message) {
@@ -70,7 +70,7 @@ class SubstringAndRegexRulesTest {
                 new StepInput("append", Map.of("text", "never")));
 
         var started = System.nanoTime();
-        var result = runner.run(catastrophic, steps);
+        var result = runner.run(catastrophic, steps, false);
         var elapsedMillis = (System.nanoTime() - started) / 1_000_000;
 
         assertThat(result).isEqualTo(new RunResult.Rejected(List.of(
@@ -87,7 +87,7 @@ class SubstringAndRegexRulesTest {
                 new StepInput("regex", Map.of("pattern", "(?=(.*))", "replacement", "$1".repeat(1_500))),
                 new StepInput("append", Map.of("text", "never")));
 
-        assertThat(runner.run("a".repeat(3_000), steps)).isEqualTo(new RunResult.Rejected(List.of(
+        assertThat(runner.run("a".repeat(3_000), steps, false)).isEqualTo(new RunResult.Rejected(List.of(
                 new StepError(1, null, ErrorCode.RESULT_TOO_LONG, "Result is longer than 3,000 characters."))));
     }
 
@@ -130,7 +130,7 @@ class SubstringAndRegexRulesTest {
                 new StepInput("regex", Map.of("pattern", "(a|b)*")),
                 new StepInput("append", Map.of("text", "never")));
 
-        assertThat(runner.run("a".repeat(3_000), steps)).isEqualTo(new RunResult.Rejected(List.of(
+        assertThat(runner.run("a".repeat(3_000), steps, false)).isEqualTo(new RunResult.Rejected(List.of(
                 new StepError(1, null, ErrorCode.PATTERN_TIMEOUT, "Pattern is too complex for this text."))));
     }
 }

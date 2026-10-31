@@ -1,20 +1,25 @@
-# Keep the build context small and let the container build everything itself.
 .git
-.github
-.devcontainer
-.pi
-.idea
-.vscode
-
-**/target
 **/node_modules
+**/target
 **/dist
 **/test-results
 **/playwright-report
+.playwright-cli
+.playwright-mcp
+.pi
+prototypes
+docs
+*.log
+.env
+.env.*
+# Keep the build context small and let the container build everything itself.
+.github
+.devcontainer
+.idea
+.vscode
+
 **/*.tsbuildinfo
 **/.eslintcache
-
-docs
 PROMPTS.md
 ai-logs
 README.md
