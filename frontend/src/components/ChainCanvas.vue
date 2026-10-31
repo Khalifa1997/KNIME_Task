@@ -118,6 +118,8 @@ const typeOf = (id: string) =>
 
 const nodes = ref<Node[]>([])
 const edges = ref<Edge[]>([])
+const contentCheckEdgeId = computed(() => edgeIdOf(ids.value[0] as string, ids.value[1] as string))
+const contentCheckBadge = computed(() => ({ on: props.chain.contentCheck, available: props.contentCheckAvailable }))
 
 watch(
   [ids, () => props.layout.positions, () => props.layout.mode],
@@ -134,8 +136,6 @@ watch(
           targetPosition: ends.value.target,
           // Vue Flow never applies `ariaRole`, so the role goes in through domAttributes.
           domAttributes: { role: 'group', 'aria-labelledby': titleIdOf(id) },
-          // The Content check badge's tooltip reaches over the next node, so the Input text sits on top.
-          zIndex: id === INPUT_ID ? 1 : 0,
           data: {},
         }) as Node,
     )
@@ -339,7 +339,11 @@ watch(() => props.focusRequest, (request) => {
     />
 
     <template #edge-flow="edgeProps">
-      <FlowEdge v-bind="edgeProps" />
+      <FlowEdge
+        v-bind="edgeProps"
+        :content-check="edgeProps.id === contentCheckEdgeId ? contentCheckBadge : null"
+        @toggle-content-check="emit('update:contentCheck', $event)"
+      />
     </template>
     <Panel
       v-if="swapHintVisible"
@@ -353,15 +357,12 @@ watch(() => props.focusRequest, (request) => {
       <InputNode
         :focus-request="focusById[INPUT_ID] ?? null"
         :text="chain.inputText"
-        :content-check="chain.contentCheck"
-        :content-check-available="contentCheckAvailable"
         :errors="inputErrors"
         :suppress-errors="run.status === 'failed'"
         :dimmed="dimmed"
         :max-input-length="maxInputLength"
         :source-position="ends.source"
         @update:text="emit('update:inputText', $event)"
-        @update:content-check="emit('update:contentCheck', $event)"
       />
     </template>
 
@@ -393,6 +394,18 @@ watch(() => props.focusRequest, (request) => {
 </template>
 
 <style>
+/*
+ * The edge-label layer (the Content check badge and its tooltip) always paints above the nodes.
+ * Isolating the nodes layer keeps Vue Flow's per-node z-index, raised on select, inside it.
+ */
+.chain-canvas .vue-flow__nodes {
+  isolation: isolate;
+}
+
+.chain-canvas .vue-flow__edgelabel-renderer {
+  z-index: 1;
+}
+
 /* Themed through Vue Flow's --xy-* variables, not its own dark preset. */
 .chain-canvas {
   --xy-background-color: var(--canvas-bg);
