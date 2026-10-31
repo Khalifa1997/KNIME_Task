@@ -51,6 +51,17 @@ Spring Boot had twice the throughput of the next option because it is the only o
   - Its fast mode blocks Node's event loop while Java runs, and its async mode is slower.
   - The library is called by method name, with no types, so every new Transformation would go through an untyped boundary.
 
+### How the backend is built
+
+- **A rejected Chain is a normal result, not an exception.** `ChainRunner` returns a sealed `RunResult` (`Completed` or `Rejected`), so the compiler makes every caller handle both outcomes. Only an unreachable Content check is thrown.
+- **Two layers of validation.** `app` checks only the request's shape (fields present, Step ids unique). Every Transformation's rules live in `core`, declared once in its Fields, and that same declaration feeds the metadata the frontend builds its forms from. The rules and the forms can't drift apart.
+- **We own the error format.** The `422` is our own record instead of Spring's `ProblemDetail`, so no automatic fields leak into the contract, and the tests compare it against the [`contract/`](../contract/) JSON exactly.
+- **All or nothing.** A successful run returns every Step's result, which the canvas shows on each node. A rejected run returns no partial results, so the canvas never shows results that don't match the Chain.
+- **Stateless.** The server stores nothing. The whole Chain is sent on every Run and the Saved session lives in the browser, so there's no database and the backend scales out freely.
+- **Plain Spring MVC, not WebFlux.** The work is short and CPU-bound, so blocking request handling is simpler and enough.
+- **An explicit list of Transformations.** They are registered by hand in `BuiltInTransformations.all()`, with no classpath scanning or plugins, so the toolbar order is explicit and `core` needs no framework.
+- **Two ways to deploy.** Locally it's one jar on one port. For free hosting, the backend runs on Render (Docker) and the frontend on Netlify, which forwards `/api` to Render so the browser still sees one origin and needs no CORS.
+
 ## 3. The Transformations
 
 Each Transformation has a real use. Most are modelled on the JavaScript `String` API, which web developers already know:
@@ -103,3 +114,13 @@ It checks only the Input text, it sends that text to OpenAI, and if OpenAI can't
 - **ESLint only, no oxlint,** so Vue templates and the accessibility rules are linted.
 - **The Saved session keeps invalid values** instead of silently fixing them.
 - **No CI.** Tests are run by hand.
+
+## 6. Next steps
+
+- **Protect the open API.** There is no authentication or rate limiting yet. Add rate limiting per client and a deadline for the whole run, which closes the regex gap above.
+- **Virtual threads.** Turning on `spring.threads.virtual.enabled` stops slow Content check calls (up to 5 s each) from tying up the server's threads.
+- **Configurable limits.** `ChainRunner` ignores the `Limits` bean and always uses 3,000 characters and 30 Steps ([#58](https://github.com/Khalifa1997/KNIME_Task/issues/58)).
+- **Accounts and server-side saving.** A Saved session lives in one browser tab only.
+- **Branching.** Steps with more than one input or output, which the canvas is ready for.
+- **Check the Output too,** not only the Input text, and look at catching fraudulent data.
+- **Avoid cold starts.** Render's free plan puts the backend to sleep when idle, so the first request after a pause is slow.
