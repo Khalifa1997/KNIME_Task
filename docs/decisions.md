@@ -115,7 +115,68 @@ It checks only the Input text, it sends that text to OpenAI, and if OpenAI can't
 - **The Saved session keeps invalid values** instead of silently fixing them.
 - **No CI.** Tests are run by hand.
 
-## 6. Next steps
+## 6. How I built it
+
+I built this with an AI agent (Pi, with Claude models), using Matt Pocock's [engineering skills](https://github.com/mattpocock/skills). Rather than asking the agent for an app, I split the work into phases, and I made every decision myself. The agent's job was to research, challenge me, and then type.
+
+### The phases
+
+| When | Phase | What came out |
+|---|---|---|
+| 25 Oct | **Research and prototypes** | Four backend prototypes with a benchmark (section 2), ten editor prototypes with measurements (section 1), research notes on the `research` branch |
+| 25–26 Oct, about 19 h | **Planning with [Wayfinder](https://github.com/mattpocock/skills/tree/main/skills/engineering/wayfinder)** | One map, [Text Transformer MVP: build-ready plan](https://github.com/Khalifa1997/KNIME_Task/issues/1), resolved through 18 decision tickets |
+| 30 Oct | **Spec and tickets** | [The spec](https://github.com/Khalifa1997/KNIME_Task/issues/21) ([`to-spec`](https://github.com/mattpocock/skills/tree/main/skills/engineering/to-spec)), then 15 vertical slices with blocking links ([`to-tickets`](https://github.com/mattpocock/skills/tree/main/skills/engineering/to-tickets)) |
+| 30–31 Oct, about 24 h | **Implementation** | One PR per slice ([`implement`](https://github.com/mattpocock/skills/tree/main/skills/engineering/implement)), with the unblocked slices built in parallel, each in its own git worktree |
+| 31 Oct | **Follow-ups** | Regex memory limits, the Content check, more Transformations |
+
+### Wayfinder and grilling
+
+**Wayfinder** is for work too big for one agent session. It charts the way as a **map**: one GitHub issue listing the destination (here, the four success criteria) and the decisions made so far. Each open question becomes its own **decision ticket**, labelled by how it gets resolved:
+
+- **research:** the agent reads primary sources (toolchain versions, Vue Flow's keyboard and touch behaviour).
+- **prototype:** throwaway code answers a question that reading can't.
+- **grilling:** a live interview with me.
+
+Tickets block each other, so I could always see which questions were answerable now. The map was done when nothing was left to decide. It only plans: apart from throwaway prototypes, no code was written until the map was closed.
+
+**[Grilling](https://github.com/mattpocock/skills/tree/main/skills/productivity/grilling)** is how most tickets were resolved. The agent asks every question it can answer now, in numbered rounds, each with its recommendation, and I accept or overrule it. It keeps going until every branch of the decision is covered. Grilling regularly surfaced layers I hadn't seen. For example:
+
+- **Bridges to Java.** I was weighing FastAPI and Go for speed. The research showed that every non-JVM framework needs a bridge to the Java library, and the bridges cost more than they saved.
+- **A changed backend.** What should a Saved session do when the backend has changed since it was saved? That became the reconciliation rules and the blocked restore.
+- **A failed run versus a wrong Chain.** A server that can't be reached is different from a Chain with mistakes in it. That became a new glossary term, **Run failure**, which never marks a Step red.
+- **A real bug.** The canvas prototype found that touch dragging doesn't work in Vue Flow 2, which led to a patch and a test that guards it.
+- **The Content check's gap.** It checks only the Input text, so a Step can still add harmful text. I accepted that and recorded it in an ADR.
+
+The words agreed during grilling went into [`GLOSSARY.md`](../GLOSSARY.md), so the tickets, code and tests all use the same vocabulary.
+
+### Tests
+
+Tests are what make it safe to let an AI write the code. An agent writes plausible code very quickly, so I need a check that doesn't depend on reading every line. I settled the testing strategy as its own decision ticket, [Testing strategy: layers, tools, and what the build runs](https://github.com/Khalifa1997/KNIME_Task/issues/18), before any code existed:
+
+| Layer | Tools | What it proves |
+|---|---|---|
+| `core` | JUnit 6 + AssertJ, no Spring | One test per Transformation example and per error in the catalogue |
+| `app` | `MockMvcTester` | Every endpoint and status code, compared strictly against the [`contract/`](../contract/) JSON |
+| Frontend | Vitest + jsdom | Field rendering and the pure logic (session reconciliation, save timing, failure messages), using the same `contract/` JSON |
+| End to end | Playwright against the real jar | The four success criteria, touch drag, Shift+drag swap, Retry, on Chromium desktop and phone |
+| Accessibility | axe in Playwright | Any WCAG 2.2 A or AA violation fails the run |
+
+**How I used test-driven development with AI:**
+
+- **Test first, one slice at a time.** The `implement` skill drives each ticket with the [`tdd`](https://github.com/mattpocock/skills/tree/main/skills/engineering/tdd) skill: write one failing test, then only enough code to pass it, then the next test. A test that was seen failing proves it can catch something, which matters when the same agent writes both the test and the code.
+- **The examples are the spec.** The tickets held concrete tables (every Transformation's examples and every error's code), and the tests are written from those tables, not from the code. The agent can't quietly change the behaviour to match its own implementation.
+- **One contract, used by both sides.** The `contract/` JSON is checked by the Java tests and the frontend tests, so the backend and frontend can't drift apart without a test failing.
+- **Real over mocked.** The API tests use the real `core`, and the end-to-end tests run the real jar. Mocks hide exactly the integration mistakes an agent is likely to make.
+- **Review on two axes.** The PRs went through the [`code-review`](https://github.com/mattpocock/skills/tree/main/skills/engineering/code-review) skill: one reviewer checks it against the repo's standards (`AGENTS.md`, the glossary), another against what the ticket asked for. Visible changes come with a Playwright flow that records a video and screenshots, so the evidence can be run again.
+
+### Trade-offs I made
+
+- **A day of planning before any code.** Prototyping ten editors and four backends took time. But it meant the implementation never changed direction, and the slices could be built in parallel because the decisions were already locked.
+- **Parallel agents bring merge conflicts.** Building unblocked slices at the same time was fast, but two merges once left a duplicated tag in `ChainCanvas.vue`, which needed its own fix PR.
+- **End-to-end tests aren't part of the build.** `./mvnw package` runs the Java tests, lint, type-check and Vitest. Playwright needs a browser download and the built jar, so it runs separately with `npm run test:e2e`. There is no CI and no coverage gate; the layers above are the bar.
+- **Everything is recorded.** Every prompt I sent is in [`PROMPTS.md`](../PROMPTS.md), and every decision is on the map and its tickets.
+
+## 7. Next steps
 
 - **Protect the open API.** There is no authentication or rate limiting yet. Add rate limiting per client and a deadline for the whole run, which closes the regex gap above.
 - **Virtual threads.** Turning on `spring.threads.virtual.enabled` stops slow Content check calls (up to 5 s each) from tying up the server's threads.
