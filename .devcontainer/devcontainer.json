@@ -1,0 +1,36 @@
+{
+  "name": "Text Transformer",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "25",
+      "jdkDistro": "tem",
+      "installMaven": "false"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "24"
+    }
+  },
+  "forwardPorts": [8080, 5173],
+  "portsAttributes": {
+    "8080": {
+      "label": "Text Transformer (Spring Boot)",
+      "onAutoForward": "openBrowser"
+    },
+    "5173": {
+      "label": "Vite dev server",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "npm ci --prefix frontend",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "Vue.volar",
+        "dbaeumer.vscode-eslint",
+        "stylelint.vscode-stylelint"
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+# Keep the build context small and let the container build everything itself.
+.git
+.github
+.devcontainer
+.pi
+.idea
+.vscode
+
+**/target
+**/node_modules
+**/dist
+**/test-results
+**/playwright-report
+**/*.tsbuildinfo
+**/.eslintcache
+
+docs
+PROMPTS.md
+ai-logs
+README.md
