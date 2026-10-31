@@ -5,7 +5,7 @@ test('a reload brings back the work but not the results', async ({ page }, testI
   const palette = page.getByRole('region', { name: 'Add Step' })
   const status = page.getByRole('status').filter({ hasText: /Not run yet|Up to date|Changed/ })
   await page.getByRole('textbox', { name: 'Input text' }).fill('Hello World')
-  await palette.getByRole('button', { name: 'Replace' }).click()
+  await palette.getByRole('button', { name: 'Replace', exact: true }).click()
   await palette.getByRole('button', { name: 'Uppercase' }).click()
   const replace = page.getByRole('group', { name: 'Step 1: Replace' })
   await replace.getByRole('textbox').first().fill('World')
