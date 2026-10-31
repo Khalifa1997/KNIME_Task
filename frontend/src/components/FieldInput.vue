@@ -35,14 +35,15 @@ function stopCanvasKey(event: KeyboardEvent) {
   event.stopPropagation()
 }
 
+// The backend reads null as "use the Field's default", so a cleared text Field stays an empty string.
 function onTextInput(event: Event) {
-  const value = (event.target as HTMLInputElement).value
-  emit('update:value', value === '' && !props.field.required ? null : value)
+  emit('update:value', (event.target as HTMLInputElement).value)
 }
 
+// An empty number input has no value; null avoids sending NaN.
 function onIntegerInput(event: Event) {
   const input = event.target as HTMLInputElement
-  emit('update:value', input.value === '' && !props.field.required ? null : input.valueAsNumber)
+  emit('update:value', input.value === '' ? null : input.valueAsNumber)
 }
 
 function onBooleanInput(event: Event) {
