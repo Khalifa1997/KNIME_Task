@@ -102,3 +102,34 @@ it('moves focus to its first Field when asked, but not when only the node was as
   expect(document.activeElement).toBe(wrapper.get('input[id="field-replace-step-search"]').element)
   wrapper.unmount()
 })
+
+it('shows the swap label and outline only while it is a swap target', async () => {
+  const wrapper = mount(StepNode, {
+    props: {
+      invalid: false,
+      wholeStepErrors: [],
+      fieldErrors: {},
+      stepId: 'upper-step',
+      index: 2,
+      canMoveEarlier: true,
+      canMoveLater: false,
+      phone: false,
+      label: 'Uppercase',
+      fields: [],
+      values: {},
+      result: undefined,
+      dimmed: false,
+      swapLabel: null,
+      targetPosition: Position.Left,
+      sourcePosition: Position.Right,
+    },
+    global: { stubs: { Handle: true } },
+  })
+  expect(wrapper.text()).not.toContain('Swap with')
+  expect(wrapper.get('.node').classes()).not.toContain('node--swap-target')
+  await wrapper.setProps({ swapLabel: 'Swap with Step 1' })
+  expect(wrapper.text()).toContain('Swap with Step 1')
+  expect(wrapper.get('.node').classes()).toContain('node--swap-target')
+  await wrapper.setProps({ swapLabel: null })
+  expect(wrapper.text()).not.toContain('Swap with')
+})

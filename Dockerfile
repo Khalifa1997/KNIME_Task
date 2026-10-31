@@ -1,14 +1,14 @@
-# Backend image for Render (or any Docker host).
-# Build stage: Maven builds core, frontend (Node is installed into target/ by the plugin) and app.
+# Optional third way to run the app: `docker compose up --build`.
+# Build stage: the same `./mvnw package` as a local build (Java tests, lint, type-check, Vitest).
 FROM eclipse-temurin:25-jdk AS build
-WORKDIR /src
+WORKDIR /workspace
 COPY . .
-RUN chmod +x mvnw && ./mvnw -B -pl app -am package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 chmod +x mvnw && ./mvnw -B -ntp package
 
+# Run stage: only the JRE and the one jar, which serves the API and the built frontend.
 FROM eclipse-temurin:25-jre
 WORKDIR /app
-COPY --from=build /src/app/target/app.jar app.jar
-# Keep the heap inside small free-tier containers (Render free: 512 MB).
+COPY --from=build /workspace/app/target/app.jar app.jar
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75"
 EXPOSE 8080
-CMD ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

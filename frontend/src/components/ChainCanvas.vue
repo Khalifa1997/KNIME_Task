@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, shallowRef, watch } from 'vue'
-import { until, usePreferredReducedMotion, useWindowSize } from '@vueuse/core'
+import { until, useKeyModifier, usePreferredReducedMotion, useWindowSize } from '@vueuse/core'
 import {
   Background,
   Controls,
+  Panel,
   VueFlow,
   setupVueFlow,
   useNodesInitialized,
@@ -16,6 +17,7 @@ import type { RunError, FieldValue, TransformationMeta } from '../api/types'
 import {
   INPUT_ID,
   OUTPUT_ID,
+  edgeIdOf,
   handlePositions,
   slot,
   titleIdOf,
@@ -24,8 +26,10 @@ import {
   type Point,
 } from '../layout'
 import type { Chain, RunState } from '../run'
+import { stepUnderPointer } from '../swap'
 import InputNode from './InputNode.vue'
 import OutputNode from './OutputNode.vue'
+import FlowEdge from './FlowEdge.vue'
 import StepNode from './StepNode.vue'
 
 const props = defineProps<{
@@ -46,6 +50,7 @@ const emit = defineEmits<{
   'update:viewport': [viewport: Viewport]
   'delete-step': [stepId: string]
   'move-step': [stepId: string, direction: -1 | 1]
+  'swap-steps': [draggedId: string, targetId: string, draggedStart: Point]
   'update-field': [stepId: string, name: string, value: FieldValue]
 }>()
 
@@ -141,14 +146,22 @@ const spokenName = (index: number) =>
   index === 0 ? 'Input text' : index === ids.value.length - 1 ? 'Output' : `Step ${index}`
 
 watch(
-  [ids, reducedMotion],
+  [ids, reducedMotion, () => props.run.status, () => props.run.flash],
   () => {
+    const flashedIds = new Set(props.run.flash?.edgeIds)
     edges.value = ids.value.slice(1).map((target, index) => ({
-      id: `${ids.value[index]}->${target}`,
+      id: edgeIdOf(ids.value[index] as string, target),
       source: ids.value[index] as string,
       target,
       ariaLabel: `${spokenName(index)} to ${spokenName(index + 1)}`,
-      animated: !reducedMotion.value,
+      type: 'flow',
+      data: {
+        index,
+        // The fill draws while running and holds until the result arrives.
+        filling: props.run.status === 'running',
+        flash: flashedIds.has(edgeIdOf(ids.value[index] as string, target)) ? props.run.flash?.kind : null,
+        reducedMotion: reducedMotion.value,
+      },
       selectable: false,
       focusable: false,
       deletable: false,
@@ -195,7 +208,50 @@ watch(
   },
 )
 
-function onNodeDragStop({ nodes: dragged }: NodeDragEvent) {
+// The Step being dragged on its own, with where it started; unset for any other drag.
+const stepDrag = ref<{ id: string; start: Point; mouse: boolean } | null>(null)
+const swapTargetId = ref<string | null>(null)
+const shiftHeld = useKeyModifier('Shift')
+
+const dragMovesOneStep = (dragged: Node[]) => dragged.length === 1 && typeOf(dragged[0]!.id) === 'step'
+const isMouseDrag = (event: NodeDragEvent['event']) => !('touches' in event)
+
+function stepAt(event: NodeDragEvent['event'], draggedId: string) {
+  if (!('clientX' in event)) return null
+  return stepUnderPointer(document.elementsFromPoint(event.clientX, event.clientY), draggedId)
+}
+
+function onNodeDragStart({ event, node, nodes: dragged }: NodeDragEvent) {
+  stepDrag.value = dragMovesOneStep(dragged)
+    ? { id: node.id, start: { x: node.position.x, y: node.position.y }, mouse: isMouseDrag(event) }
+    : null
+}
+
+function onNodeDrag({ event }: NodeDragEvent) {
+  const drag = stepDrag.value
+  swapTargetId.value = drag?.mouse ? stepAt(event, drag.id) : null
+}
+
+const swapHintVisible = computed(() => stepDrag.value?.mouse === true)
+// Shift is read live, so pressing or releasing it mid-drag shows or hides the highlight at once.
+const swapLabelById = computed(() => {
+  const drag = stepDrag.value
+  const target = swapTargetId.value
+  if (!drag || !target || !shiftHeld.value) return {}
+  return { [target]: `Swap with Step ${ids.value.indexOf(drag.id)}` }
+})
+
+function onNodeDragStop({ event, node, nodes: dragged }: NodeDragEvent) {
+  const drag = stepDrag.value
+  stepDrag.value = null
+  swapTargetId.value = null
+  const targetId = drag && event.shiftKey && dragMovesOneStep(dragged) && drag.id === node.id
+    ? stepAt(event, drag.id)
+    : null
+  if (drag && targetId) {
+    emit('swap-steps', drag.id, targetId, drag.start)
+    return
+  }
   emit(
     'update:positions',
     Object.fromEntries(dragged.map((node) => [node.id, { x: node.position.x, y: node.position.y }])),
@@ -263,9 +319,11 @@ watch(() => props.focusRequest, (request) => {
     :edges-focusable="false"
     :nodes-connectable="false"
     :min-zoom="0.3"
-    attribution-position="bottom-left"
+    :pro-options="{ hideAttribution: true }"
     @keydown="onKeydown"
     @keyup="onKeyup"
+    @node-drag-start="onNodeDragStart"
+    @node-drag="onNodeDrag"
     @node-drag-stop="onNodeDragStop"
     @move-end="onMoveEnd"
   >
@@ -277,6 +335,17 @@ watch(() => props.focusRequest, (request) => {
       :show-interactive="false"
       position="bottom-right"
     />
+
+    <template #edge-flow="edgeProps">
+      <FlowEdge v-bind="edgeProps" />
+    </template>
+    <Panel
+      v-if="swapHintVisible"
+      class="swap-hint"
+      position="bottom-center"
+    >
+      Hold Shift and drop on another Step to swap them
+    </Panel>
 
     <template #node-inputtext>
       <InputNode
@@ -301,6 +370,7 @@ watch(() => props.focusRequest, (request) => {
         v-bind="stepPropsById[id]"
         :result="run.results[id]"
         :dimmed="dimmed"
+        :swap-label="swapLabelById[id] ?? null"
         :source-position="ends.source"
         :target-position="ends.target"
         @update-field="onUpdateField"
@@ -337,18 +407,18 @@ watch(() => props.focusRequest, (request) => {
   --xy-node-background-color: transparent;
   --xy-node-boxshadow-hover: none;
   --xy-node-boxshadow-selected: none;
-  --xy-attribution-background-color: transparent;
   min-height: 0;
 }
 
-/* A 24px target (WCAG 2.5.8), away from the zoom controls in the other corner. */
-.chain-canvas .vue-flow__attribution a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.5rem;
-  padding: 0 0.25rem;
-  color: var(--muted-on-dark);
+/* A hint, not a control: it must never catch the pointer mid-drag. */
+.chain-canvas .swap-hint {
+  margin: 0 0 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  background: #000;
+  color: var(--text-on-dark);
   font-size: var(--text-sm);
+  pointer-events: none;
 }
 
 /* Our cards draw their own border; Vue Flow's wrapper only positions them. */

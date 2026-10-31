@@ -13,6 +13,8 @@ test('shows one Add Step button per Transformation, described by its description
     'Replace',
     'Append',
     'Prepend',
+    'Substring',
+    'Regex replace',
     'Uppercase',
     'Lowercase',
   ])

@@ -83,6 +83,18 @@ textarea {
   color: #111;
 }
 
+/* Secondary button on a light card, such as the blocked restore card and the dialog. */
+.btn--on-light {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.btn--danger {
+  border-color: transparent;
+  background: var(--danger-text);
+  color: #fff;
+}
+
 .chip {
   min-height: 2.25rem;
   padding: 0.5rem 0.75rem;
@@ -220,6 +232,59 @@ textarea {
   opacity: 0.7;
 }
 
+/* A non-blocking notice under the header. */
+.banner {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  background: #3a1d1d;
+  color: #ffb4ab;
+  border-bottom: 1px solid var(--danger-border);
+  font-size: var(--text-md);
+}
+
+/* The same strip for information rather than a problem. */
+.banner--notice {
+  background: #26262e;
+  color: var(--text-on-dark);
+  border-bottom-color: var(--accent);
+}
+
+.banner--notice ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+}
+
+/* A modal confirmation: a light card, like the Step cards, over a dimmed page. */
+dialog {
+  width: min(26rem, calc(100% - 2rem));
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text);
+  color-scheme: light;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 70%);
+}
+
+dialog h2 {
+  font-size: var(--text-lg);
+}
+
+dialog p {
+  margin: 1rem 0;
+  font-size: var(--text-md);
+}
+
+.dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
 /* Status */
 .status {
   display: flex;
@@ -277,4 +342,14 @@ textarea {
 .error-messages.is-dimmed {
   color: var(--text);
   opacity: 0.7;
+}
+
+/* Reduced motion: no transitions or animations. Run motion shows its state without them. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

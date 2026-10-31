@@ -27,6 +27,25 @@
         { "name": "text", "label": "Text", "type": "text", "required": false, "defaultValue": "", "min": null, "max": null, "options": null }
       ]
     },
+    {
+      "id": "substring",
+      "label": "Substring",
+      "description": "Keeps only part of the text, counted in characters from 0.",
+      "fields": [
+        { "name": "start", "label": "Start", "type": "integer", "required": true, "defaultValue": 0, "min": 0, "max": null, "options": null },
+        { "name": "end", "label": "End", "type": "integer", "required": false, "defaultValue": null, "min": 0, "max": null, "options": null }
+      ]
+    },
+    {
+      "id": "regex",
+      "label": "Regex replace",
+      "description": "Replaces every match of a regular expression.",
+      "fields": [
+        { "name": "pattern", "label": "Pattern", "type": "text", "required": true, "defaultValue": null, "min": null, "max": null, "options": null },
+        { "name": "replacement", "label": "Replacement", "type": "text", "required": false, "defaultValue": "", "min": null, "max": null, "options": null },
+        { "name": "ignoreCase", "label": "Ignore case", "type": "boolean", "required": false, "defaultValue": false, "min": null, "max": null, "options": null }
+      ]
+    },
     { "id": "uppercase", "label": "Uppercase", "description": "Converts the text to upper case.", "fields": [] },
     { "id": "lowercase", "label": "Lowercase", "description": "Converts the text to lower case.", "fields": [] }
   ]

@@ -49,7 +49,35 @@ class TransformationExamplesTest {
                 Arguments.of("append", "Hi", values(), "Hi"),
                 Arguments.of("prepend", "World", values("text", "Hello "), "Hello World"),
                 Arguments.of("prepend", "World", values("text", ""), "World"),
-                Arguments.of("prepend", "World", values(), "World"));
+                Arguments.of("prepend", "World", values(), "World"),
+                Arguments.of("substring", "Hello", values("start", 2, "end", 99), "llo"),
+                Arguments.of("substring", "Hello", values("start", 10, "end", 20), ""),
+                Arguments.of("substring", "Hello", values("start", 1), "ello"),
+                Arguments.of("substring", "Hello", values("start", 1, "end", null), "ello"),
+                Arguments.of("substring", "Hello", values("start", 1, "end", 1), ""),
+                // Code points, not UTF-16 units.
+                Arguments.of("substring", "\uD83D\uDE00ab", values("start", 0, "end", 1), "\uD83D\uDE00"),
+                Arguments.of("substring", "\uD83D\uDE00ab", values("start", 1), "ab"),
+                Arguments.of("regex", "2026-10-25",
+                        values("pattern", "(\\d+)-(\\d+)-(\\d+)", "replacement", "$3/$2/$1"), "25/10/2026"),
+                // Java's Matcher.appendReplacement rules: \ escapes the next character.
+                Arguments.of("regex", "5 apples", values("pattern", "\\d+", "replacement", "\\$$0"), "$5 apples"),
+                Arguments.of("regex", "abc", values("pattern", "b", "replacement", "\\n\\\\\\$1"), "an\\$1c"),
+                // $0 is the whole match.
+                Arguments.of("regex", "cat", values("pattern", "(c)at", "replacement", "[$0]"), "[cat]"),
+                // Digits after the first join the group number only while that group exists.
+                Arguments.of("regex", "cat", values("pattern", "(c)at", "replacement", "$10"), "c0"),
+                Arguments.of("regex", "john smith",
+                        values("pattern", "(?<first>\\w+) (?<last>\\w+)", "replacement", "${last}, ${first}"),
+                        "smith, john"),
+                // A group that did not take part is empty.
+                Arguments.of("regex", "abc", values("pattern", "(x)?b", "replacement", "<$1>"), "a<>c"),
+                Arguments.of("regex", "aaa", values("pattern", "a", "replacement", "b"), "bbb"),
+                Arguments.of("regex", "abc", values("pattern", "x", "replacement", "y"), "abc"),
+                Arguments.of("regex", "Abc", values("pattern", "a", "replacement", "x"), "Abc"),
+                Arguments.of("regex", "Abc", values("pattern", "a", "replacement", "x", "ignoreCase", true), "xbc"),
+                Arguments.of("regex", "a\nb", values("pattern", "(?m)^b", "replacement", "x"), "a\nx"),
+                Arguments.of("regex", "abc", values("pattern", "b"), "ac"));
     }
 
     @ParameterizedTest(name = "{0}: \"{1}\" {2} -> \"{3}\"")

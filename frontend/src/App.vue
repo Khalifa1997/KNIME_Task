@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
 import { useActiveElement, useEventListener, useMediaQuery } from '@vueuse/core'
 import { fetchMetadata } from './api/metadata'
 import { postRun } from './api/run'
 import type { Metadata } from './api/types'
 import ChainCanvas from './components/ChainCanvas.vue'
-import { INPUT_ID, PHONE_QUERY, slot, type FocusRequest, type Layout } from './layout'
+import { INPUT_ID, PHONE_QUERY, slot, type FocusRequest, type Layout, type Point } from './layout'
 import { createRunState, executeRun, requestOf, runStatus, type Chain } from './run'
+import { discardStoredSession, readStoredSession, restoreSession, useSessionSaving } from './session'
 
 const metadata = ref<Metadata | null>(null)
-const phase = ref<'loading' | 'metadata-error' | 'ready'>('loading')
+const phase = ref<'loading' | 'metadata-error' | 'restore-blocked' | 'ready'>('loading')
 const metadataReason = ref('')
 const hasSavedSession = ref(false)
+const restoreBlockedReason = ref('')
+// The Field adjustments made when the Saved session was restored; shown, never saved.
+const restoreNotice = ref<string[]>([])
 const readyMetadata = computed(() => phase.value === 'ready' ? metadata.value : null)
 let metadataLoading = false
 
@@ -20,14 +24,27 @@ async function loadMetadata() {
   metadataLoading = true
   phase.value = 'loading'
   metadataReason.value = ''
-  try {
-    // Presence only; saving and restoring belong to later stages.
-    hasSavedSession.value = sessionStorage.getItem('text-transformer.session') !== null
-  } catch {
-    hasSavedSession.value = false
-  }
+  restoreBlockedReason.value = ''
+  restoreNotice.value = []
+  const stored = readStoredSession()
+  hasSavedSession.value = stored !== null
   try {
     metadata.value = await fetchMetadata()
+    // Restoring brings back the work only; the run status stays Not run yet.
+    const restored = restoreSession(stored, metadata.value, layout.mode)
+    if (restored.status === 'blocked') {
+      restoreBlockedReason.value = restored.reason
+      phase.value = 'restore-blocked'
+      return
+    }
+    if (restored.status === 'restored') {
+      chain.inputText = restored.inputText
+      chain.contentCheck = restored.contentCheck
+      chain.steps = restored.steps
+      layout.positions = restored.positions
+      layout.viewport = restored.viewport
+      restoreNotice.value = restored.adjustments
+    }
     phase.value = 'ready'
   } catch (error) {
     metadataReason.value = error instanceof Error ? error.message : 'Something went wrong.'
@@ -36,6 +53,27 @@ async function loadMetadata() {
     metadataLoading = false
   }
 }
+const discardDialog = useTemplateRef<HTMLDialogElement>('discardDialog')
+
+function askToDiscard() {
+  discardDialog.value?.showModal()
+}
+
+// Removes the blocked Saved session and starts an empty Chain; the snapshot stays until this runs.
+function discardSession() {
+  discardDialog.value?.close()
+  discardStoredSession()
+  hasSavedSession.value = false
+  restoreBlockedReason.value = ''
+  chain.inputText = ''
+  chain.contentCheck = false
+  chain.steps = []
+  layout.positions = {}
+  layout.viewport = null
+  phase.value = 'ready'
+  focusNode(INPUT_ID, true)
+}
+
 const chain = reactive<Chain>({ inputText: '', contentCheck: false, steps: [] })
 const isPhone = useMediaQuery(PHONE_QUERY)
 const layout = reactive<Layout>({
@@ -44,6 +82,7 @@ const layout = reactive<Layout>({
   viewport: null,
 })
 const run = reactive(createRunState())
+const { saveFailed } = useSessionSaving({ chain, layout, metadata, phase })
 const focusRequest = ref<FocusRequest | null>(null)
 const activeElement = useActiveElement()
 
@@ -125,11 +164,31 @@ function moveStep(id: string, direction: -1 | 1) {
   chain.steps[targetIndex] = step
   layout.positions = { ...layout.positions, [id]: neighborPosition, [neighbor.id]: position }
   announce(`Moved ${stepLabel(step)} to position ${targetIndex + 1} of ${chain.steps.length}.`)
-  // Keeps focus on the moved Step unless one of its own buttons already has it.
+  keepFocusOn(id)
+}
+
+// Keeps focus on the Step unless one of its own buttons already has it.
+function keepFocusOn(id: string) {
   nextTick(() => {
     const active = activeElement.value
     if (!(active instanceof HTMLButtonElement) || active.disabled) focusRequest.value = { id, nodeOnly: true }
   })
+}
+
+// The dragged Step takes the target's place in the Chain and on the canvas, and the target takes
+// the spot the dragged Step was dragged from.
+function swapSteps(draggedId: string, targetId: string, draggedStart: Point) {
+  const index = chain.steps.findIndex((step) => step.id === draggedId)
+  const targetIndex = chain.steps.findIndex((step) => step.id === targetId)
+  const dragged = chain.steps[index]
+  const target = chain.steps[targetIndex]
+  if (!dragged || !target || index === targetIndex) return
+  const targetPosition = { ...(layout.positions[targetId] ?? slot(targetIndex + 1, layout.mode)) }
+  chain.steps[index] = target
+  chain.steps[targetIndex] = dragged
+  layout.positions = { ...layout.positions, [draggedId]: targetPosition, [targetId]: { ...draggedStart } }
+  announce(`Swapped ${stepLabel(dragged)} and ${stepLabel(target)}. ${stepLabel(dragged)} is now Step ${targetIndex + 1}.`)
+  keepFocusOn(draggedId)
 }
 
 const status = computed(() => runStatus(run, requestOf(chain)))
@@ -227,6 +286,28 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
     >
       {{ announcement }}
     </div>
+    <p
+      v-if="saveFailed"
+      class="banner"
+      role="status"
+    >
+      Your changes couldn't be saved and may not survive a reload. You can keep editing.
+    </p>
+    <div
+      v-if="restoreNotice.length && phase === 'ready'"
+      class="banner banner--notice"
+      role="status"
+    >
+      <p>Your saved session was adjusted to the Transformations now on offer:</p>
+      <ul>
+        <li
+          v-for="adjustment in restoreNotice"
+          :key="adjustment"
+        >
+          {{ adjustment }}
+        </li>
+      </ul>
+    </div>
     <main class="workspace">
       <p
         v-if="phase === 'loading'"
@@ -237,7 +318,7 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
       </p>
       <section
         v-else-if="phase === 'metadata-error'"
-        class="metadata-error"
+        class="gate-card"
         role="alert"
         aria-labelledby="metadata-error-title"
       >
@@ -256,6 +337,34 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
           Retry
         </button>
       </section>
+      <section
+        v-else-if="phase === 'restore-blocked'"
+        class="gate-card"
+        role="alert"
+        aria-labelledby="restore-blocked-title"
+      >
+        <h2 id="restore-blocked-title">
+          Couldn’t restore your saved session
+        </h2>
+        <p>{{ restoreBlockedReason }}</p>
+        <p>Your saved work is untouched until you discard it.</p>
+        <div class="gate-card__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            @click="loadMetadata"
+          >
+            Retry
+          </button>
+          <button
+            type="button"
+            class="btn btn--on-light"
+            @click="askToDiscard"
+          >
+            Discard saved session and start fresh
+          </button>
+        </div>
+      </section>
       <ChainCanvas
         v-if="readyMetadata"
         :focus-request="focusRequest"
@@ -268,6 +377,7 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
         :dimmed="status.dimmed"
         @delete-step="deleteStep"
         @move-step="moveStep"
+        @swap-steps="swapSteps"
         @update:input-text="chain.inputText = $event"
         @update:content-check="chain.contentCheck = $event"
         @update-field="(stepId, name, value) => {
@@ -278,13 +388,41 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
         @update:viewport="layout.viewport = $event"
       />
     </main>
+    <dialog
+      ref="discardDialog"
+      aria-labelledby="discard-title"
+      aria-describedby="discard-description"
+    >
+      <h2 id="discard-title">
+        Discard saved session?
+      </h2>
+      <p id="discard-description">
+        This removes your saved Input text and Chain for good. You will start with an empty Chain.
+      </p>
+      <div class="dialog__actions">
+        <button
+          type="button"
+          class="btn btn--on-light"
+          @click="discardDialog?.close()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn--danger"
+          @click="discardSession"
+        >
+          Discard
+        </button>
+      </div>
+    </dialog>
   </div>
 </template>
 
 <style scoped>
 .app {
-  display: grid;
-  grid-template: auto 1fr / minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   height: 100dvh;
 }
 
@@ -343,6 +481,7 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
 
 .workspace {
   display: grid;
+  flex: 1;
   min-height: 0;
 }
 
@@ -351,7 +490,7 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
   margin: 1rem;
 }
 
-.metadata-error {
+.gate-card {
   place-self: center;
   width: min(30rem, calc(100% - 2rem));
   padding: 1.5rem;
@@ -360,15 +499,21 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
   border-radius: 0.5rem;
 }
 
-.metadata-error h2 {
+.gate-card h2 {
   font-size: var(--text-lg);
   text-box: trim-both cap alphabetic;
 }
 
-.metadata-error p {
+.gate-card p {
   margin: 1rem 0;
   font-size: var(--text-md);
   text-box: trim-both cap alphabetic;
+}
+
+.gate-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 @media (max-width: 799px) {

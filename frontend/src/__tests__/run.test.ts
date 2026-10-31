@@ -359,3 +359,67 @@ describe('the Content check', () => {
     expect(run.detail).toBe("The Content check couldn't be reached, so nothing was run.")
   })
 })
+
+describe('which edges flash after a run', () => {
+  const INPUT_TO_UPPER = 'input->' + UPPER
+  const UPPER_TO_LOWER = `${UPPER}->${LOWER}`
+  const LOWER_TO_OUTPUT = `${LOWER}->output`
+  const stepError = (stepId: string | null) => ({ stepId, field: null, code: 'x', detail: 'bad' })
+  const reject = (...errors: ReturnType<typeof stepError>[]) => async () => {
+    throw new RunRejected({ ...problem, errors })
+  }
+
+  it('flashes nothing before a run and nothing while running', async () => {
+    const run = createRunState()
+    expect(run.flash).toBeNull()
+    await executeRun(run, chainOf(), async () => response)
+    const pending = executeRun(run, chainOf(), () => new Promise(() => {}))
+    expect(run.flash).toBeNull()
+    void pending
+  })
+
+  it('flashes every edge on success', async () => {
+    const run = createRunState()
+    await executeRun(run, chainOf(), async () => response)
+    expect(run.flash).toEqual({ kind: 'success', edgeIds: [INPUT_TO_UPPER, UPPER_TO_LOWER, LOWER_TO_OUTPUT] })
+  })
+
+  it('flashes red from Input text up to the edge entering the first failing Step', async () => {
+    const run = createRunState()
+    await executeRun(run, chainOf(), reject(stepError(LOWER)))
+    expect(run.flash).toEqual({ kind: 'danger', edgeIds: [INPUT_TO_UPPER, UPPER_TO_LOWER] })
+    await executeRun(run, chainOf(), reject(stepError(LOWER), stepError(UPPER)))
+    expect(run.flash).toEqual({ kind: 'danger', edgeIds: [INPUT_TO_UPPER] })
+  })
+
+  it('ignores a failing Step that was deleted while the run was pending', async () => {
+    const run = createRunState()
+    const chain = chainOf()
+    let fail!: (reason: RunRejected) => void
+    const pending = executeRun(run, chain, () => new Promise((_resolve, rejectRun) => { fail = rejectRun }))
+    chain.steps.splice(0, 1)
+    fail(new RunRejected({ ...problem, errors: [stepError(UPPER), stepError(LOWER)] }))
+    await pending
+    expect(run.flash).toEqual({ kind: 'danger', edgeIds: [`input->${LOWER}`] })
+  })
+
+  it('makes the fill vanish with no red for Input errors alone and for Run failures', async () => {
+    const run = createRunState()
+    await executeRun(run, chainOf(), reject(stepError(null)))
+    expect(run.flash).toBeNull()
+    await executeRun(run, chainOf(), async () => { throw new RunFailure('network') })
+    expect(run.flash).toBeNull()
+    await executeRun(run, chainOf(), async () => response)
+    await executeRun(run, chainOf(), async () => { throw new RunFailure('network') })
+    expect(run.flash).toBeNull()
+  })
+
+  it('restarts the flash on each run by clearing it while running', async () => {
+    const run = createRunState()
+    await executeRun(run, chainOf(), async () => response)
+    const first = run.flash
+    await executeRun(run, chainOf(), async () => response)
+    expect(run.flash).not.toBe(first)
+    expect(run.flash).toEqual(first)
+  })
+})

@@ -23,12 +23,23 @@ function field(overrides: Partial<FieldMeta>): FieldMeta {
 }
 
 describe('FieldInput', () => {
-  it('renders a labelled text input and emits null when an optional Field is cleared', async () => {
-    const wrapper = mount(FieldInput, { props: props({}, 'present') })
+  it('renders a labelled text input and emits an empty string, not null, when an optional Field is cleared', async () => {
+    // The backend reads null as "use the default", so clearing must send what the user sees.
+    const wrapper = mount(FieldInput, { props: props({ defaultValue: 'fallback' }, 'present') })
 
     const input = wrapper.get('input[type="text"]')
     expect(input.attributes('required')).toBeUndefined()
     await input.setValue('')
+
+    expect(wrapper.emitted('update:value')).toEqual([['']])
+  })
+
+  it('emits null rather than NaN when a required number input is cleared', async () => {
+    const wrapper = mount(FieldInput, {
+      props: props({ type: 'integer', required: true }, 3),
+    })
+
+    await wrapper.get('input[type="number"]').setValue('')
 
     expect(wrapper.emitted('update:value')).toEqual([[null]])
   })
@@ -79,6 +90,26 @@ describe('FieldInput', () => {
     await wrapper.get('select').setValue('tab')
 
     expect(wrapper.emitted('update:value')).toEqual([['tab']])
+  })
+
+  it('shows a Choice that is no longer offered as selected but unavailable, and stops showing it once another is picked', async () => {
+    const options = [{ value: 'comma', label: 'Comma' }, { value: 'tab', label: 'Tab' }]
+    const wrapper = mount(FieldInput, { props: props({ type: 'select', options }, 'semicolon') })
+
+    const unavailable = wrapper.findAll('option').find((option) => option.element.value === 'semicolon')!
+    expect(unavailable.text()).toBe('semicolon (no longer available)')
+    expect(unavailable.attributes('disabled')).toBeDefined()
+    expect(wrapper.get('select').element.value).toBe('semicolon')
+    expect(wrapper.findAll('option')).toHaveLength(3)
+
+    await wrapper.setProps({ value: 'tab' })
+    expect(wrapper.findAll('option')).toHaveLength(2)
+  })
+
+  it('adds no unavailable Choice when the value is unset or offered', () => {
+    const options = [{ value: 'comma', label: 'Comma' }]
+    expect(mount(FieldInput, { props: props({ type: 'select', options }, null) }).findAll('option')).toHaveLength(1)
+    expect(mount(FieldInput, { props: props({ type: 'select', options }, 'comma') }).findAll('option')).toHaveLength(1)
   })
 
   it('uses its Step id to keep labels and controls unique', () => {
