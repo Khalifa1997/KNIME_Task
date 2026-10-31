@@ -46,6 +46,45 @@
       ]
     },
     { "id": "uppercase", "label": "Uppercase", "description": "Converts the text to upper case.", "fields": [] },
-    { "id": "lowercase", "label": "Lowercase", "description": "Converts the text to lower case.", "fields": [] }
+    { "id": "lowercase", "label": "Lowercase", "description": "Converts the text to lower case.", "fields": [] },
+    { "id": "reverse", "label": "Reverse", "description": "Reverses the order of the characters.", "fields": [] },
+    {
+      "id": "trim",
+      "label": "Trim whitespace",
+      "description": "Removes spaces, tabs and line breaks from the start, the end, or both.",
+      "fields": [
+        { "name": "sides", "label": "Trim from", "type": "select", "required": false, "defaultValue": "both", "min": null, "max": null, "options": [
+          { "value": "both", "label": "Both ends" },
+          { "value": "start", "label": "Start" },
+          { "value": "end", "label": "End" }
+        ] }
+      ]
+    },
+    {
+      "id": "mask",
+      "label": "Mask",
+      "description": "Hides characters behind a mask character, optionally keeping some at the start or end.",
+      "fields": [
+        { "name": "character", "label": "Mask character", "type": "text", "required": false, "defaultValue": "*", "min": null, "max": null, "options": null },
+        { "name": "keepStart", "label": "Keep at start", "type": "integer", "required": false, "defaultValue": 0, "min": 0, "max": null, "options": null },
+        { "name": "keepEnd", "label": "Keep at end", "type": "integer", "required": false, "defaultValue": 0, "min": 0, "max": null, "options": null }
+      ]
+    },
+    {
+      "id": "base64encode",
+      "label": "Base64 encode",
+      "description": "Encodes the text as Base64, from its UTF-8 bytes.",
+      "fields": [
+        { "name": "urlSafe", "label": "URL-safe alphabet", "type": "boolean", "required": false, "defaultValue": false, "min": null, "max": null, "options": null }
+      ]
+    },
+    {
+      "id": "base64decode",
+      "label": "Base64 decode",
+      "description": "Decodes Base64 back to text, read as UTF-8.",
+      "fields": [
+        { "name": "urlSafe", "label": "URL-safe alphabet", "type": "boolean", "required": false, "defaultValue": false, "min": null, "max": null, "options": null }
+      ]
+    }
   ]
 }
