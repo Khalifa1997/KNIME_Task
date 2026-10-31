@@ -60,18 +60,16 @@ class TransformationExamplesTest {
                 Arguments.of("substring", "\uD83D\uDE00ab", values("start", 1), "ab"),
                 Arguments.of("regex", "2026-10-25",
                         values("pattern", "(\\d+)-(\\d+)-(\\d+)", "replacement", "$3/$2/$1"), "25/10/2026"),
-                Arguments.of("regex", "5 apples", values("pattern", "\\d+", "replacement", "$$$&"), "$5 apples"),
+                // Java's Matcher.appendReplacement rules: \ escapes the next character.
+                Arguments.of("regex", "5 apples", values("pattern", "\\d+", "replacement", "\\$$0"), "$5 apples"),
+                Arguments.of("regex", "abc", values("pattern", "b", "replacement", "\\n\\\\\\$1"), "an\\$1c"),
+                // $0 is the whole match.
+                Arguments.of("regex", "cat", values("pattern", "(c)at", "replacement", "[$0]"), "[cat]"),
+                // Digits after the first join the group number only while that group exists.
                 Arguments.of("regex", "cat", values("pattern", "(c)at", "replacement", "$10"), "c0"),
-                // Missing groups and unknown tokens stay literal.
-                Arguments.of("regex", "cat", values("pattern", "(c)at", "replacement", "$5"), "$5"),
-                Arguments.of("regex", "cat", values("pattern", "(c)at", "replacement", "$0"), "$0"),
                 Arguments.of("regex", "john smith",
-                        values("pattern", "(?<first>\\w+) (?<last>\\w+)", "replacement", "$<last>, $<first>"),
+                        values("pattern", "(?<first>\\w+) (?<last>\\w+)", "replacement", "${last}, ${first}"),
                         "smith, john"),
-                Arguments.of("regex", "john", values("pattern", "(?<first>\\w+)", "replacement", "$<nope>"), "$<nope>"),
-                Arguments.of("regex", "cat", values("pattern", "(c)at", "replacement", "$<n>"), "$<n>"),
-                Arguments.of("regex", "abc", values("pattern", "b", "replacement", "[$`|$']"), "a[a|c]c"),
-                Arguments.of("regex", "abc", values("pattern", "b", "replacement", "\\n\\$1"), "a\\n\\$1c"),
                 // A group that did not take part is empty.
                 Arguments.of("regex", "abc", values("pattern", "(x)?b", "replacement", "<$1>"), "a<>c"),
                 Arguments.of("regex", "aaa", values("pattern", "a", "replacement", "b"), "bbb"),
