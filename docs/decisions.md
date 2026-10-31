@@ -35,10 +35,21 @@ The text processing is `core`, a plain Java 25 library with no Spring. `app` is 
 | FastAPI | 767 | 65 ms | 146 MB |
 | Go | 149 | 321 ms | 7 MB |
 
-Spring Boot had twice the throughput of the next option because it is the only one that calls the Java library directly. The others need a bridge to Java:
-- Go started a new JVM for every request.
-- FastAPI was limited by Python's global interpreter lock.
-- NestJS's bridge corrupted emoji, which rules it out for a text tool.
+Spring Boot had twice the throughput of the next option because it is the only one that calls the Java library directly, as normal method calls in the same process. The others had to reach the library through a bridge, and each bridge caused problems:
+
+- **Go can't load a Java library at all.** The prototype started a new `java` process for every request, which cost about 35 ms each time. The alternatives were a long-running Java process to talk to, or a Java microservice, and a microservice means writing a Java web layer anyway. The image was also no smaller, because Java still had to be installed.
+- **FastAPI used JPype, which loads a JVM inside Python.**
+  - There can be only one JVM per process, and it can't be restarted.
+  - Java classes can only be imported after the JVM has started.
+  - Calls between Python and Java threads are hard to reason about.
+  - Python's global interpreter lock held throughput back. More worker processes would help, but each one starts its own JVM.
+  - Data crosses two type systems, and there are two toolchains (pip and Maven) to maintain.
+- **NestJS used `java-bridge`, which loads a JVM inside Node.**
+  - It **corrupted emoji** and other characters outside Unicode's Basic Multilingual Plane: `"a👋b"` arrived in Java as garbage. That alone rules it out for a text tool.
+  - Its prebuilt binary needed a newer glibc (2.39), so the Docker image had to move to Debian 13.
+  - Java 25 warns that the way it loads native code will be blocked in a future release unless extra JVM flags are added.
+  - Its fast mode blocks Node's event loop while Java runs, and its async mode is slower.
+  - The library is called by method name, with no types, so every new Transformation would go through an untyped boundary.
 
 ## 3. The Transformations
 
