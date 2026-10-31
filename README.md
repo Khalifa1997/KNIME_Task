@@ -114,6 +114,11 @@ docker compose up --build      # first build runs ./mvnw package inside the imag
 
 The multi-stage [`Dockerfile`](Dockerfile) builds with `eclipse-temurin:25-jdk` and `./mvnw package`, and runs the jar on `eclipse-temurin:25-jre`. Stop it with `docker compose down`.
 
+### Deploying (free tiers)
+
+- **Backend on Render:** New → Blueprint, pick this repo. [`render.yaml`](render.yaml) builds the same `Dockerfile` as a free web service; the app listens on Render's `PORT`. Free services sleep when idle, so the first request after a while takes 30–60 s.
+- **Frontend on Netlify:** Add new site → Import from Git. [`netlify.toml`](netlify.toml) builds `frontend/` and proxies `/api/*` to the Render service, so there is still no CORS. Set its `to` URL to your Render service's URL.
+
 ### Dev loop
 
 Two processes, with Vite proxying `/api` to Spring Boot (so there is no CORS anywhere):

@@ -1,0 +1,15 @@
+# Frontend on Netlify; /api is proxied to the backend so the browser sees one origin (no CORS).
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+[[redirects]]
+  from = "/api/*"
+  # Replace with your Render service URL after the backend's first deploy.
+  to = "https://text-transformer-api.onrender.com/api/:splat"
+  status = 200
+  force = true

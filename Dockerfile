@@ -9,5 +9,7 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -ntp package
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 COPY --from=build /workspace/app/target/app.jar app.jar
+# Keep the heap inside small free-tier containers (Render free: 512 MB).
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0"
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
