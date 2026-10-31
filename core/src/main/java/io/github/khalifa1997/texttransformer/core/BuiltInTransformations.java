@@ -15,6 +15,11 @@ final class BuiltInTransformations {
                 new Substring(),
                 new RegexReplace(),
                 new Uppercase(),
-                new Lowercase());
+                new Lowercase(),
+                new Reverse(),
+                new Trim(),
+                new Mask(),
+                new Base64Encode(),
+                new Base64Decode());
     }
 }

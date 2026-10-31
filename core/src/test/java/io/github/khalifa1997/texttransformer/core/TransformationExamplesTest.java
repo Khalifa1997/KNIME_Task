@@ -29,6 +29,19 @@ class TransformationExamplesTest {
                 Arguments.of("lowercase", "TITLE", values(), "title"),
                 // Locale.ROOT: a capital I lowercases to a dotted i on every server.
                 Arguments.of("lowercase", "TITLE IN ISTANBUL", values(), "title in istanbul"),
+                Arguments.of("reverse", "Hello", values(), "olleH"),
+                Arguments.of("reverse", "", values(), ""),
+                // Characters as a reader sees them: an emoji keeps its surrogate pair,
+                Arguments.of("reverse", "\uD83D\uDE00ab", values(), "ba\uD83D\uDE00"),
+                // a combining accent stays on its letter,
+                Arguments.of("reverse", "e\u0301a", values(), "ae\u0301"),
+                // a flag stays the same flag,
+                Arguments.of("reverse", "\uD83C\uDDE9\uD83C\uDDEA\uD83C\uDDEB\uD83C\uDDF7", values(),
+                        "\uD83C\uDDEB\uD83C\uDDF7\uD83C\uDDE9\uD83C\uDDEA"),
+                // a joined emoji stays joined,
+                Arguments.of("reverse", "\uD83D\uDC68\u200D\uD83D\uDC67x", values(), "x\uD83D\uDC68\u200D\uD83D\uDC67"),
+                // and a Windows line break stays \r\n.
+                Arguments.of("reverse", "a\r\nb", values(), "b\r\na"),
                 Arguments.of("replace", "a-b-a", values("search", "a", "replacement", "x"), "x-b-x"),
                 // Case-sensitive.
                 Arguments.of("replace", "Aa", values("search", "a", "replacement", "x"), "Ax"),
@@ -77,7 +90,36 @@ class TransformationExamplesTest {
                 Arguments.of("regex", "Abc", values("pattern", "a", "replacement", "x"), "Abc"),
                 Arguments.of("regex", "Abc", values("pattern", "a", "replacement", "x", "ignoreCase", true), "xbc"),
                 Arguments.of("regex", "a\nb", values("pattern", "(?m)^b", "replacement", "x"), "a\nx"),
-                Arguments.of("regex", "abc", values("pattern", "b"), "ac"));
+                Arguments.of("regex", "abc", values("pattern", "b"), "ac"),
+                Arguments.of("trim", " \t Hi there \n", values(), "Hi there"),
+                Arguments.of("trim", " \t Hi there \n", values("sides", "start"), "Hi there \n"),
+                Arguments.of("trim", " \t Hi there \n", values("sides", "end"), " \t Hi there"),
+                // Unicode whitespace too, such as the ideographic space.
+                Arguments.of("trim", "\u3000Hi\u3000", values(), "Hi"),
+                Arguments.of("trim", "   ", values(), ""),
+                Arguments.of("mask", "secret", values(), "******"),
+                Arguments.of("mask", "4111111111111111", values("keepEnd", 4), "************1111"),
+                Arguments.of("mask", "john@example.com", values("character", "#", "keepStart", 1, "keepEnd", 4),
+                        "j###########.com"),
+                // Keeping more than there is masks nothing.
+                Arguments.of("mask", "abc", values("keepStart", 2, "keepEnd", 2), "abc"),
+                Arguments.of("mask", "", values(), ""),
+                // Code points: an emoji is one character, in the text and as the mask.
+                Arguments.of("mask", "\uD83D\uDE00ab", values("keepEnd", 1), "**b"),
+                Arguments.of("mask", "ab", values("character", "\uD83D\uDE48"), "\uD83D\uDE48\uD83D\uDE48"),
+                Arguments.of("base64encode", "Hello", values(), "SGVsbG8="),
+                Arguments.of("base64encode", "", values(), ""),
+                // UTF-8 bytes.
+                Arguments.of("base64encode", "straße", values(), "c3RyYcOfZQ=="),
+                Arguments.of("base64encode", "??>", values(), "Pz8+"),
+                Arguments.of("base64encode", "??>", values("urlSafe", true), "Pz8-"),
+                Arguments.of("base64decode", "SGVsbG8=", values(), "Hello"),
+                Arguments.of("base64decode", "c3RyYcOfZQ==", values(), "straße"),
+                // Padding is optional and whitespace, such as line wrapping, is ignored.
+                Arguments.of("base64decode", "SGVsbG8", values(), "Hello"),
+                Arguments.of("base64decode", " SGVs\nbG8= ", values(), "Hello"),
+                Arguments.of("base64decode", "Pz8-", values("urlSafe", true), "??>"),
+                Arguments.of("base64decode", "", values(), ""));
     }
 
     @ParameterizedTest(name = "{0}: \"{1}\" {2} -> \"{3}\"")

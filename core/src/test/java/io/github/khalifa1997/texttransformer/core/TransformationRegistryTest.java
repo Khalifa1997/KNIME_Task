@@ -20,7 +20,14 @@ class TransformationRegistryTest {
                         tuple("substring", "Substring", "Keeps only part of the text, counted in characters from 0."),
                         tuple("regex", "Regex replace", "Replaces every match of a regular expression."),
                         tuple("uppercase", "Uppercase", "Converts the text to upper case."),
-                        tuple("lowercase", "Lowercase", "Converts the text to lower case."));
+                        tuple("lowercase", "Lowercase", "Converts the text to lower case."),
+                        tuple("reverse", "Reverse", "Reverses the order of the characters."),
+                        tuple("trim", "Trim whitespace",
+                                "Removes spaces, tabs and line breaks from the start, the end, or both."),
+                        tuple("mask", "Mask",
+                                "Hides characters behind a mask character, optionally keeping some at the start or end."),
+                        tuple("base64encode", "Base64 encode", "Encodes the text as Base64, from its UTF-8 bytes."),
+                        tuple("base64decode", "Base64 decode", "Decodes Base64 back to text, read as UTF-8."));
     }
 
     @Test
@@ -38,7 +45,13 @@ class TransformationRegistryTest {
                         tuple("substring", "end", "End", FieldSpec.Type.INTEGER, false, null),
                         tuple("regex", "pattern", "Pattern", FieldSpec.Type.TEXT, true, null),
                         tuple("regex", "replacement", "Replacement", FieldSpec.Type.TEXT, false, ""),
-                        tuple("regex", "ignoreCase", "Ignore case", FieldSpec.Type.BOOLEAN, false, false));
+                        tuple("regex", "ignoreCase", "Ignore case", FieldSpec.Type.BOOLEAN, false, false),
+                        tuple("trim", "sides", "Trim from", FieldSpec.Type.SELECT, false, "both"),
+                        tuple("mask", "character", "Mask character", FieldSpec.Type.TEXT, false, "*"),
+                        tuple("mask", "keepStart", "Keep at start", FieldSpec.Type.INTEGER, false, 0),
+                        tuple("mask", "keepEnd", "Keep at end", FieldSpec.Type.INTEGER, false, 0),
+                        tuple("base64encode", "urlSafe", "URL-safe alphabet", FieldSpec.Type.BOOLEAN, false, false),
+                        tuple("base64decode", "urlSafe", "URL-safe alphabet", FieldSpec.Type.BOOLEAN, false, false));
     }
 
     @Test
@@ -56,7 +69,7 @@ class TransformationRegistryTest {
         assertThat(registry.all())
                 .extracting(Transformation::id)
                 .doesNotHaveDuplicates()
-                .allSatisfy(id -> assertThat(id).matches("[a-z]+"));
+                .allSatisfy(id -> assertThat(id).matches("[a-z][a-z0-9]*"));
     }
 
     @Test

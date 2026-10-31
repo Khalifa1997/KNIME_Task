@@ -2,7 +2,7 @@
 
 ## What it is
 
-A no-code tool for changing text in a repeatable way. You build a **Chain** of **Steps** on a node canvas (Input text → Step → … → Output), choosing from the **Transformations** the backend offers: Replace, Append, Prepend, Substring, Regex replace, Uppercase and Lowercase. Each Step shows its own result, so you can see what every change did. Press Run and the backend runs the Chain; if anything is wrong, it tells you everything that is wrong at once and marks the Steps responsible. Your work survives a page reload.
+A no-code tool for changing text in a repeatable way. You build a **Chain** of **Steps** on a node canvas (Input text → Step → … → Output), choosing from the **Transformations** the backend offers: Replace, Append, Prepend, Substring, Regex replace, Uppercase, Lowercase, Reverse, Trim whitespace, Mask, Base64 encode and Base64 decode. Each Step shows its own result, so you can see what every change did. Press Run and the backend runs the Chain; if anything is wrong, it tells you everything that is wrong at once and marks the Steps responsible. Your work survives a page reload.
 
 ![The Text Transformer canvas after a run: Input text, a Replace, an Uppercase and an Append Step, and the Output](docs/screenshot.png)
 
@@ -186,6 +186,6 @@ This project was built with AI, and I want that to be plain. I worked with the P
 - **Vue Flow patch.** Touch dragging relies on our patch to `@xyflow/vue` `2.0.0-next.18`. The bug has not been reported upstream yet: [Report the Vue Flow touch-drag bug upstream (deferred)](https://github.com/Khalifa1997/KNIME_Task/issues/20) tracks filing it (the draft is `prototypes/vue-flow-touch-repro/UPSTREAM-ISSUE.md` on the `prototype` branch). On every upgrade of the library, re-run the touch-drag test without the patch and delete the patch if it passes.
 - **WCAG 2.2.2.** The dashed edges always flow, so there is no way to pause them unless the OS asks for reduced motion. This is an accepted gap ([#12](https://github.com/Khalifa1997/KNIME_Task/issues/12)).
 - **Session storage only.** The Saved session lives in `sessionStorage`: it survives a reload but not a closed tab, and is not shared between tabs or devices. There are no accounts or server-side saving, and old schema versions are not migrated (they block the restore instead).
-- **Only seven Transformations.** The registry makes more cheap to add (see the walkthrough above), but none are added.
+- **Only twelve Transformations.** The registry makes more cheap to add (see the walkthrough above). Base64 always works on UTF-8 bytes, so it can't encode or decode binary data.
 - **No CI, and Chromium-only end-to-end tests.** `./mvnw package` and `npm run test:e2e` are run by hand; Firefox and WebKit are not covered.
 - **English-only messages.** Error messages are English strings built in `core`; each error's `code` leaves room for translating them later.

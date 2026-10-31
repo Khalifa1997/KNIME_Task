@@ -256,6 +256,6 @@ class ChainValidationTest {
         outputs.clear();
         assertThat(completed.stepOutputs()).containsExactly("ok");
         assertThatThrownBy(() -> completed.stepOutputs().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThat(ErrorCode.values()).hasSize(14);
+        assertThat(ErrorCode.values()).hasSize(16);
     }
 }

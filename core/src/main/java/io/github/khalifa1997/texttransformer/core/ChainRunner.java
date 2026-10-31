@@ -60,6 +60,9 @@ public final class ChainRunner {
             } catch (PatternTimeoutException e) {
                 return new RunResult.Rejected(List.of(
                         new StepError(index, null, ErrorCode.PATTERN_TIMEOUT, e.getMessage())));
+            } catch (InvalidBase64Exception e) {
+                return new RunResult.Rejected(List.of(
+                        new StepError(index, null, ErrorCode.INVALID_BASE64, e.getMessage())));
             } catch (ResultTooLongException e) {
                 return resultTooLong(index, limits);
             }
