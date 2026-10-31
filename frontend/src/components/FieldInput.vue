@@ -17,6 +17,16 @@ const inputId = computed(() => `field-${props.stepId}-${props.field.name}`)
 
 const control = useTemplateRef<HTMLElement>('control')
 
+// A saved Choice the backend no longer offers stays selected, shown as unavailable and not pickable again.
+const choices = computed(() => {
+  const options = (props.field.options ?? []).map((choice) => ({ ...choice, unavailable: false }))
+  const value = props.value
+  if (typeof value === 'string' && value !== '' && !options.some((choice) => choice.value === value)) {
+    options.push({ value, label: `${value} (no longer available)`, unavailable: true })
+  }
+  return options
+})
+
 const errorId = computed(() => `${inputId.value}-errors`)
 const hasErrors = computed(() => Boolean(props.errors?.length))
 
@@ -110,9 +120,10 @@ watch(() => props.focusRequest, (request) => {
       @change="onSelectInput"
     >
       <option
-        v-for="choice in field.options ?? []"
+        v-for="choice in choices"
         :key="choice.value"
         :value="choice.value"
+        :disabled="choice.unavailable"
       >
         {{ choice.label }}
       </option>

@@ -5,7 +5,7 @@ test('edits Replace Fields, runs the Chain, and clears the optional Replacement 
 }, testInfo) => {
   await page.goto('/')
   await page.getByRole('textbox', { name: 'Input text' }).fill('a-b-a')
-  await page.getByRole('region', { name: 'Add Step' }).getByRole('button', { name: 'Replace' }).click()
+  await page.getByRole('region', { name: 'Add Step' }).getByRole('button', { name: 'Replace', exact: true }).click()
 
   const step = page.getByRole('group', { name: 'Step 1: Replace' })
   const replacement = step.getByRole('textbox', { name: 'Replacement' })

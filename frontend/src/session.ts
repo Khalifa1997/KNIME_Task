@@ -12,7 +12,7 @@ export interface SessionSnapshot {
   schemaVersion: 1
   inputText: string
   steps: { id: string; transformationId: string; values: Record<string, FieldValue> }[]
-  // The Field types the values were written under, so a changed Field drops its stale value on restore.
+  // The Fields and types the values were written under, so restore can find added, removed and changed-type Fields.
   fieldTypes: Record<string, Record<string, FieldType>>
   // The viewport is null until the user has panned or zoomed; restore then frames the Chain afresh.
   layout: { mode: LayoutMode; positions: Record<string, Point>; viewport: Viewport | null }
@@ -47,22 +47,20 @@ export function isSessionSnapshot(value: unknown): value is SessionSnapshot {
     (layout.viewport === null || isViewport(layout.viewport))
 }
 
-export function hasStoredSession(): boolean {
+// The stored text as it is, so a damaged Saved session can be told apart from no Saved session.
+export function readStoredSession(): string | null {
   try {
-    return sessionStorage.getItem(SESSION_KEY) !== null
+    return sessionStorage.getItem(SESSION_KEY)
   } catch {
-    return false
+    return null
   }
 }
 
-export function readSession(): SessionSnapshot | null {
+export function discardStoredSession() {
   try {
-    const stored = sessionStorage.getItem(SESSION_KEY)
-    if (stored === null) return null
-    const parsed: unknown = JSON.parse(stored)
-    return isSessionSnapshot(parsed) ? parsed : null
+    sessionStorage.removeItem(SESSION_KEY)
   } catch {
-    return null
+    // Storage is unavailable, so there is nothing to remove.
   }
 }
 
@@ -87,36 +85,93 @@ export function buildSnapshot(chain: Chain, layout: Layout, metadata: Metadata):
   }
 }
 
-function fits(type: FieldType, value: FieldValue) {
-  if (value === null) return true
-  return type === 'integer' ? typeof value === 'number' : type === 'boolean' ? typeof value === 'boolean' : typeof value === 'string'
-}
-
-// Fits a snapshot to the metadata just loaded: unknown Transformations are dropped, and a Field whose
-// type changed gets its default. Positions and viewport come back only in the same layout mode.
-export function restoreSession(snapshot: SessionSnapshot, metadata: Metadata, mode: LayoutMode) {
-  const seen = new Set<string>()
-  const steps: Chain['steps'] = []
-  for (const saved of snapshot.steps) {
-    const transformation = metadata.transformations.find((item) => item.id === saved.transformationId)
-    if (!transformation || seen.has(saved.id) || steps.length >= metadata.limits.maxSteps) continue
-    seen.add(saved.id)
-    const values = Object.fromEntries(transformation.fields.map((field) => {
-      const value = saved.values[field.name]
-      const usable = value !== undefined && snapshot.fieldTypes[transformation.id]?.[field.name] === field.type && fits(field.type, value)
-      return [field.name, usable ? value : field.defaultValue]
-    }))
-    steps.push({ id: saved.id, transformationId: saved.transformationId, values })
+export type RestoreResult =
+  | { status: 'none' }
+  | { status: 'blocked'; reason: string }
+  | {
+    status: 'restored'
+    inputText: string
+    steps: Chain['steps']
+    positions: Record<string, Point>
+    // Null when the layout mode changed: the canvas frames the Chain afresh.
+    viewport: Viewport | null
+    // One line per Transformation whose Fields were added or removed since the save.
+    adjustments: string[]
   }
+
+const DAMAGED = 'The saved session is damaged and can’t be read.'
+
+const blocked = (reason: string): RestoreResult => ({ status: 'blocked', reason })
+
+const listOf = (names: string[]) =>
+  names.length < 3 ? names.join(' and ') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+
+// Fits a stored Saved session to the metadata just loaded. A Field still there with the same type keeps
+// its value; an added Field takes its default (or stays unset); a removed Field is dropped. Anything that
+// can't be adjusted safely blocks the restore, and values that no longer fit the rules are kept as they are.
+// Positions and viewport come back only in the same layout mode.
+export function restoreSession(stored: string | null, metadata: Metadata, mode: LayoutMode): RestoreResult {
+  if (stored === null) return { status: 'none' }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(stored)
+  } catch {
+    return blocked(DAMAGED)
+  }
+  if (isRecord(parsed) && typeof parsed.schemaVersion === 'number' && parsed.schemaVersion !== 1) {
+    return blocked(`The saved session comes from another version of the app (schema version ${parsed.schemaVersion}).`)
+  }
+  if (!isSessionSnapshot(parsed)) return blocked(DAMAGED)
+  const snapshot = parsed
+  const stepIds = new Set(snapshot.steps.map((step) => step.id))
+  if (stepIds.size !== snapshot.steps.length || snapshot.steps.some((step) => !snapshot.fieldTypes[step.transformationId])) {
+    return blocked(DAMAGED)
+  }
+
+  const transformationsById = new Map(metadata.transformations.map((item) => [item.id, item]))
+  const adjustments: string[] = []
+  const addedFieldsById = new Map<string, Set<string>>()
+  for (const id of new Set(snapshot.steps.map((step) => step.transformationId))) {
+    const transformation = transformationsById.get(id)
+    if (!transformation) return blocked(`Your saved Chain uses the Transformation “${id}”, which is no longer available.`)
+    const savedTypes = snapshot.fieldTypes[id]!
+    for (const field of transformation.fields) {
+      const savedType = savedTypes[field.name]
+      if (savedType !== undefined && savedType !== field.type) {
+        return blocked(`The Field “${field.label}” of ${transformation.label} changed from ${savedType} to ${field.type} since you saved.`)
+      }
+    }
+    const added = transformation.fields.filter((field) => savedTypes[field.name] === undefined)
+    const currentNames = new Set(transformation.fields.map((field) => field.name))
+    const removed = Object.keys(savedTypes).filter((name) => !currentNames.has(name))
+    const changes = [
+      added.length ? `added ${listOf(added.map((field) => field.label))}` : '',
+      removed.length ? `removed ${listOf(removed)}` : '',
+    ].filter(Boolean)
+    if (changes.length) adjustments.push(`${transformation.label}: ${changes.join('; ')}.`)
+    addedFieldsById.set(id, new Set(added.map((field) => field.name)))
+  }
+
+  const steps: Chain['steps'] = snapshot.steps.map((saved) => {
+    const transformation = transformationsById.get(saved.transformationId)!
+    const addedNames = addedFieldsById.get(saved.transformationId)!
+    const values = Object.fromEntries(transformation.fields.map((field) => [
+      field.name,
+      addedNames.has(field.name) ? field.defaultValue : (saved.values[field.name] ?? null),
+    ]))
+    return { id: saved.id, transformationId: saved.transformationId, values }
+  })
   const sameMode = snapshot.layout.mode === mode
-  const liveIds = new Set(['input', 'output', ...steps.map((step) => step.id)])
+  const liveIds = new Set(['input', 'output', ...stepIds])
   return {
+    status: 'restored',
     inputText: snapshot.inputText,
     steps,
     positions: sameMode
       ? Object.fromEntries(Object.entries(snapshot.layout.positions).filter(([id]) => liveIds.has(id)))
       : {},
     viewport: sameMode ? snapshot.layout.viewport : null,
+    adjustments,
   }
 }
 
