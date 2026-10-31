@@ -54,14 +54,20 @@ public final class ChainRunner {
             } catch (PatternTimeoutException e) {
                 return new RunResult.Rejected(List.of(
                         new StepError(index, null, ErrorCode.PATTERN_TIMEOUT, e.getMessage())));
+            } catch (ResultTooLongException e) {
+                return resultTooLong(index, limits);
             }
             if (text.length() > limits.maxInputLength()) {
-                return new RunResult.Rejected(List.of(new StepError(index, null, ErrorCode.RESULT_TOO_LONG,
-                        "Result is longer than " + FieldValidator.number(limits.maxInputLength()) + " characters.")));
+                return resultTooLong(index, limits);
             }
             stepOutputs.add(text);
         }
         return new RunResult.Completed(text, stepOutputs);
+    }
+
+    private static RunResult.Rejected resultTooLong(int index, Limits limits) {
+        return new RunResult.Rejected(List.of(new StepError(index, null, ErrorCode.RESULT_TOO_LONG,
+                "Result is longer than " + FieldValidator.number(limits.maxInputLength()) + " characters.")));
     }
 
     private record PreparedStep(Transformation transformation, FieldValues values) {}
