@@ -54,6 +54,7 @@ function checkedMetadata(value: unknown): Metadata {
     })
   }
   return {
+    contentCheck: { available: object(value.contentCheck) && value.contentCheck.available === true },
     limits: { maxInputLength: value.limits.maxInputLength, maxSteps: value.limits.maxSteps },
     transformations,
   }

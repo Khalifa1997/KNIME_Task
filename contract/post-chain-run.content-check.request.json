@@ -1,0 +1,7 @@
+{
+  "inputText": "Some text the Content check will judge",
+  "contentCheck": true,
+  "steps": [
+    { "id": "3f2b8c1e-6a4d-4e0b-9d57-1c2a7e5f9b01", "transformationId": "uppercase", "values": {} }
+  ]
+}

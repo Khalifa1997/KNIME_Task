@@ -15,6 +15,7 @@ const problem = {
 function chainOf(inputText = 'Hello World'): Chain {
   return {
     inputText,
+    contentCheck: false,
     steps: [
       { id: UPPER, transformationId: 'uppercase', values: {} },
       { id: LOWER, transformationId: 'lowercase', values: {} },
@@ -51,6 +52,7 @@ describe('running a Chain', () => {
 
     expect(send).toHaveBeenCalledWith({
       inputText: 'Hello World',
+      contentCheck: false,
       steps: [
         { id: UPPER, transformationId: 'uppercase', values: {} },
         { id: LOWER, transformationId: 'lowercase', values: {} },
@@ -243,6 +245,7 @@ it.each(['before', 'after'])('keeps Output unavailable when the last errored Ste
   const run = createRunState()
   const chain: Chain = {
     inputText: 'a',
+    contentCheck: false,
     steps: [{ id: UPPER, transformationId: 'replace', values: { search: '', replacement: '' } }],
   }
   // A rejected run must also discard Output from a previous successful run.
@@ -264,7 +267,7 @@ it.each(['before', 'after'])('keeps Output unavailable when the last errored Ste
 it('distinguishes a successful empty Output from unavailable Output', async () => {
   const run = createRunState()
   expect(run.output).toBeUndefined()
-  await executeRun(run, { inputText: '', steps: [] }, async () => ({ output: '', steps: [] }))
+  await executeRun(run, { inputText: '', contentCheck: false, steps: [] }, async () => ({ output: '', steps: [] }))
   expect(run.output).toBe('')
 })
 
@@ -329,5 +332,30 @@ describe('Run failure lifecycle', () => {
     await newer
     expect(run.slow).toBe(false)
     expect(vi.getTimerCount()).toBe(0)
+  })
+})
+
+describe('the Content check', () => {
+  it('sends whether the Content check is on and treats switching it as a change', async () => {
+    const run = createRunState()
+    const chain = chainOf()
+    chain.contentCheck = true
+    const send = vi.fn<(request: RunRequest) => Promise<RunResponse>>().mockResolvedValue(response)
+
+    await executeRun(run, chain, send)
+
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ contentCheck: true }))
+    expect(status(run, chain)).toBe('Up to date')
+    chain.contentCheck = false
+    expect(status(run, chain)).toBe('Changed since the last run')
+  })
+
+  it('reports a Content check that could not be reached as a Run failure', async () => {
+    const run = createRunState()
+
+    await executeRun(run, chainOf(), async () => { throw new RunFailure('check-unavailable') })
+
+    expect(run.status).toBe('failed')
+    expect(run.detail).toBe("The Content check couldn't be reached, so nothing was run.")
   })
 })

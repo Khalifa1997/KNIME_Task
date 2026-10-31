@@ -35,7 +35,7 @@ class ChainController {
         var steps = request.steps().stream()
                 .map(step -> new StepInput(step.transformationId(), step.values()))
                 .toList();
-        return switch (runner.run(request.inputText(), steps)) {
+        return switch (runner.run(request.inputText(), steps, Boolean.TRUE.equals(request.contentCheck()))) {
             case RunResult.Completed completed -> {
                 var stepResults = new ArrayList<StepResult>(steps.size());
                 for (int i = 0; i < steps.size(); i++) {
@@ -65,6 +65,7 @@ class ChainController {
 
     record RunRequest(
             @NotNull @JsonDeserialize(using = RequestStringDeserializer.class) String inputText,
+            Boolean contentCheck,
             @NotNull @UniqueStepIds List<@NotNull @Valid StepJson> steps) {}
 
     record StepJson(

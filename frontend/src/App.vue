@@ -36,7 +36,7 @@ async function loadMetadata() {
     metadataLoading = false
   }
 }
-const chain = reactive<Chain>({ inputText: '', steps: [] })
+const chain = reactive<Chain>({ inputText: '', contentCheck: false, steps: [] })
 const isPhone = useMediaQuery(PHONE_QUERY)
 const layout = reactive<Layout>({
   mode: isPhone.value ? 'phone' : 'desktop',
@@ -60,6 +60,13 @@ watch(isPhone, (phone) => {
   layout.mode = phone ? 'phone' : 'desktop'
   layout.positions = {}
   layout.viewport = null
+})
+
+const contentCheckAvailable = computed(() => readyMetadata.value?.contentCheck.available === true)
+
+// A server that can't run the Content check must never be asked to.
+watch(contentCheckAvailable, (available) => {
+  if (!available) chain.contentCheck = false
 })
 
 const canAddStep = computed(
@@ -256,11 +263,13 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
         :layout="layout"
         :transformations="readyMetadata.transformations"
         :max-input-length="readyMetadata.limits.maxInputLength"
+        :content-check-available="contentCheckAvailable"
         :run="run"
         :dimmed="status.dimmed"
         @delete-step="deleteStep"
         @move-step="moveStep"
         @update:input-text="chain.inputText = $event"
+        @update:content-check="chain.contentCheck = $event"
         @update-field="(stepId, name, value) => {
           const step = chain.steps.find((candidate) => candidate.id === stepId)
           if (step) step.values[name] = value

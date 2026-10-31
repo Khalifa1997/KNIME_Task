@@ -41,11 +41,18 @@ function isRunProblem(body: unknown): body is RunProblem {
     })
 }
 
-export type RunFailureKind = 'network' | 'server' | 'unexpected'
+export type RunFailureKind = 'network' | 'server' | 'check-unavailable' | 'unexpected'
+
+const FAILURE_MESSAGES: Record<RunFailureKind, string> = {
+  network: "Couldn't reach the server.",
+  server: 'The server had a problem.',
+  'check-unavailable': "The Content check couldn't be reached, so nothing was run.",
+  unexpected: 'Something went wrong.',
+}
 
 export class RunFailure extends Error {
   constructor(readonly kind: RunFailureKind) {
-    super(kind === 'network' ? "Couldn't reach the server." : kind === 'server' ? 'The server had a problem.' : 'Something went wrong.')
+    super(FAILURE_MESSAGES[kind])
     this.name = 'RunFailure'
   }
 }
@@ -64,6 +71,7 @@ export async function postRun(request: RunRequest): Promise<RunResponse> {
     throw new RunFailure('network')
   }
   if (response.status === 500) throw new RunFailure('server')
+  if (response.status === 503) throw new RunFailure('check-unavailable')
   if (response.status !== 200 && response.status !== 422) throw new RunFailure('unexpected')
   let body: unknown
   try {

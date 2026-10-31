@@ -10,11 +10,13 @@ const props = defineProps<{
   suppressErrors?: boolean
   dimmed?: boolean
   text: string
+  contentCheck: boolean
+  contentCheckAvailable: boolean
   maxInputLength: number
   sourcePosition: Position
 }>()
 
-const emit = defineEmits<{ 'update:text': [value: string] }>()
+const emit = defineEmits<{ 'update:text': [value: string]; 'update:contentCheck': [value: boolean] }>()
 
 const count = computed(
   () => `${props.text.length.toLocaleString('en-US')} / ${props.maxInputLength.toLocaleString('en-US')}`,
@@ -23,6 +25,15 @@ const over = computed(() => props.text.length > props.maxInputLength)
 
 function onInput(event: Event) {
   emit('update:text', (event.target as HTMLTextAreaElement).value)
+}
+
+function onContentCheck(event: Event) {
+  emit('update:contentCheck', (event.target as HTMLInputElement).checked)
+}
+
+function stopCanvasKey(event: KeyboardEvent) {
+  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) return
+  event.stopPropagation()
 }
 
 useFocusRequest('root', () => props.focusRequest)
@@ -59,6 +70,32 @@ useFocusRequest('root', () => props.focusRequest)
     >
       {{ count }}
     </p>
+    <div class="input-node__check">
+      <label
+        class="input-node__check-label"
+        for="content-check"
+      >
+        <input
+          id="content-check"
+          class="checkbox nodrag nowheel nokey"
+          type="checkbox"
+          role="switch"
+          :checked="contentCheck && contentCheckAvailable"
+          :disabled="!contentCheckAvailable"
+          :aria-describedby="contentCheckAvailable ? undefined : 'content-check-note'"
+          @keydown="stopCanvasKey"
+          @change="onContentCheck"
+        >
+        Check for harmful content (sends text to OpenAI)
+      </label>
+      <p
+        v-if="!contentCheckAvailable"
+        id="content-check-note"
+        class="input-node__note"
+      >
+        Not available: this server has no OpenAI API key.
+      </p>
+    </div>
     <div
       v-if="errors.length"
       id="input-errors"
@@ -103,6 +140,22 @@ useFocusRequest('root', () => props.focusRequest)
   color: var(--muted);
   font-size: var(--text-sm);
   text-align: right;
+}
+
+.input-node__check {
+  margin-top: 0.5rem;
+  font-size: var(--text-sm);
+}
+
+.input-node__check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+}
+
+.input-node__note {
+  color: var(--muted);
 }
 
 .input-node__count--over {

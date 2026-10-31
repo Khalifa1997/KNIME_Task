@@ -7,12 +7,14 @@ import java.util.List;
 public final class ChainRunner {
 
     private final TransformationRegistry registry;
+    private final ContentChecker contentChecker;
 
-    public ChainRunner(TransformationRegistry registry) {
+    public ChainRunner(TransformationRegistry registry, ContentChecker contentChecker) {
         this.registry = registry;
+        this.contentChecker = contentChecker;
     }
 
-    public RunResult run(String inputText, List<StepInput> steps) {
+    public RunResult run(String inputText, List<StepInput> steps, boolean contentCheck) {
         var errors = new ArrayList<RunError>();
         var prepared = new ArrayList<PreparedStep>(steps.size());
         var limits = Limits.DEFAULT;
@@ -43,6 +45,10 @@ public final class ChainRunner {
         }
         if (!errors.isEmpty()) {
             return new RunResult.Rejected(errors);
+        }
+        if (contentCheck && !inputText.isBlank() && contentChecker.flags(inputText)) {
+            return new RunResult.Rejected(List.of(new InputError(ErrorCode.INPUT_FLAGGED,
+                    "Input text was flagged as harmful and wasn't run.")));
         }
 
         var stepOutputs = new ArrayList<String>(steps.size());

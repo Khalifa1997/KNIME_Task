@@ -84,3 +84,17 @@ describe('fetchMetadata', () => {
     await expect(fetchMetadata()).resolves.toEqual(fixture)
   })
 })
+
+describe('the Content check in the metadata', () => {
+  it('reads whether the server can run the Content check', async () => {
+    respond({ ...fixture, contentCheck: { available: true } })
+    await expect(fetchMetadata()).resolves.toMatchObject({ contentCheck: { available: true } })
+  })
+
+  it('treats a server that does not say as unable to run it', async () => {
+    const withoutIt: Partial<typeof fixture> = structuredClone(fixture)
+    delete withoutIt.contentCheck
+    respond(withoutIt)
+    await expect(fetchMetadata()).resolves.toMatchObject({ contentCheck: { available: false } })
+  })
+})
