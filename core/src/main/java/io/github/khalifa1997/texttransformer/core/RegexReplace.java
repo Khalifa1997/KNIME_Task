@@ -50,12 +50,24 @@ final class RegexReplace implements Transformation {
         var matcher = compile(values).matcher(text);
         var result = new StringBuilder();
         int copiedUpTo = 0;
-        while (matcher.find()) {
-            result.append(input, copiedUpTo, matcher.start());
-            expand(replacement, matcher, input, result);
-            copiedUpTo = matcher.end();
+        try {
+            while (matcher.find()) {
+                result.append(input, copiedUpTo, matcher.start());
+                expand(replacement, matcher, input, result);
+                copiedUpTo = matcher.end();
+            }
+        } catch (StackOverflowError e) {
+            // The engine recurses once per repetition of a group; the matcher is local, so nothing is left broken.
+            throw new PatternTimeoutException("Pattern is too complex for this text.");
         }
         return result.append(input, copiedUpTo, input.length()).toString();
+    }
+
+    /** {@code $`} and {@code $'} copy up to the whole input per token per match, so the limit is checked while building. */
+    private static void checkLength(StringBuilder out) {
+        if (out.length() > Limits.DEFAULT.maxInputLength()) {
+            throw new ResultTooLongException();
+        }
     }
 
     private static Pattern compile(FieldValues values) {
@@ -68,6 +80,7 @@ final class RegexReplace implements Transformation {
         int length = replacement.length();
         int i = 0;
         while (i < length) {
+            checkLength(out);
             char c = replacement.charAt(i);
             if (c != '$' || i + 1 == length) {
                 out.append(c);
@@ -98,6 +111,7 @@ final class RegexReplace implements Transformation {
                         : literalDollar(out, i);
             }
         }
+        checkLength(out);
     }
 
     private static int literalDollar(StringBuilder out, int i) {

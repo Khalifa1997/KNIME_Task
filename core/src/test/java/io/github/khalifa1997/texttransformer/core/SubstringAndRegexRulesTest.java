@@ -71,4 +71,34 @@ class SubstringAndRegexRulesTest {
                 new StepError(1, null, ErrorCode.PATTERN_TIMEOUT, "Pattern took too long."))));
         assertThat(elapsedMillis).isBetween(1_900L, 5_000L);
     }
+
+    @Test
+    void regexStopsBuildingAResultOnceItPassesTheLimit() {
+        // ~3,000 empty matches, each expanding to 1,500 copies of the text before it: about 13 GB if built.
+        var steps = List.of(
+                new StepInput("append", Map.of("text", "")),
+                new StepInput("regex", Map.of("pattern", "x?", "replacement", "$`".repeat(1_500))),
+                new StepInput("append", Map.of("text", "never")));
+
+        assertThat(runner.run("a".repeat(3_000), steps)).isEqualTo(new RunResult.Rejected(List.of(
+                new StepError(1, null, ErrorCode.RESULT_TOO_LONG, "Result is longer than 3,000 characters."))));
+    }
+
+    @Test
+    void regexStopsBuildingAResultFromTextAfterTheMatchToo() {
+        assertThat(run("a".repeat(3_000), "regex", Map.of("pattern", "x?", "replacement", "$'".repeat(1_500))))
+                .isEqualTo(rejected(null, ErrorCode.RESULT_TOO_LONG, "Result is longer than 3,000 characters."));
+    }
+
+    @Test
+    void regexReportsAPatternThatRecursesTooDeepForTheTextAsATimeout() {
+        // Java's engine recurses once per repetition of a group, so this overflows the stack on long text.
+        var steps = List.of(
+                new StepInput("append", Map.of("text", "")),
+                new StepInput("regex", Map.of("pattern", "(a|b)*")),
+                new StepInput("append", Map.of("text", "never")));
+
+        assertThat(runner.run("a".repeat(3_000), steps)).isEqualTo(new RunResult.Rejected(List.of(
+                new StepError(1, null, ErrorCode.PATTERN_TIMEOUT, "Pattern is too complex for this text."))));
+    }
 }
