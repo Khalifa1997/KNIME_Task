@@ -23,12 +23,23 @@ function field(overrides: Partial<FieldMeta>): FieldMeta {
 }
 
 describe('FieldInput', () => {
-  it('renders a labelled text input and emits null when an optional Field is cleared', async () => {
-    const wrapper = mount(FieldInput, { props: props({}, 'present') })
+  it('renders a labelled text input and emits an empty string, not null, when an optional Field is cleared', async () => {
+    // The backend reads null as "use the default", so clearing must send what the user sees.
+    const wrapper = mount(FieldInput, { props: props({ defaultValue: 'fallback' }, 'present') })
 
     const input = wrapper.get('input[type="text"]')
     expect(input.attributes('required')).toBeUndefined()
     await input.setValue('')
+
+    expect(wrapper.emitted('update:value')).toEqual([['']])
+  })
+
+  it('emits null rather than NaN when a required number input is cleared', async () => {
+    const wrapper = mount(FieldInput, {
+      props: props({ type: 'integer', required: true }, 3),
+    })
+
+    await wrapper.get('input[type="number"]').setValue('')
 
     expect(wrapper.emitted('update:value')).toEqual([[null]])
   })
