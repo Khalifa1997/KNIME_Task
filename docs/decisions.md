@@ -169,6 +169,32 @@ Tests are what make it safe to let an AI write the code. An agent writes plausib
 - **Real over mocked.** The API tests use the real `core`, and the end-to-end tests run the real jar. Mocks hide exactly the integration mistakes an agent is likely to make.
 - **Review on two axes.** The PRs went through the [`code-review`](https://github.com/mattpocock/skills/tree/main/skills/engineering/code-review) skill: one reviewer checks it against the repo's standards (`AGENTS.md`, the glossary), another against what the ticket asked for. Visible changes come with a Playwright flow that records a video and screenshots, so the evidence can be run again.
 
+### PRs as a bird's-eye view
+
+Every slice ended in a PR written with the [`pr`](https://github.com/mattpocock/skills/tree/main/skills/engineering/pr) skill (adapted from Dex Horthy's [`show-me`](https://github.com/humanlayer/skills/tree/main/plugins/show-me/skills/show-me)). I use it all the time, because reading the PR list gives me the whole build at a glance without opening the code. Every body has the same three parts:
+
+- **Summary:** the smallest picture that makes the change clear, such as pseudocode, a call tree, a file tree or a diff of the structure, with very little prose.
+- **Evidence:** proof that it works.
+- **Merge Danger:** whether the change is a one-way or a two-way door (can it be rolled back?), and its blast radius.
+
+For example, [Saved session: reconciliation and blocked restore](https://github.com/Khalifa1997/KNIME_Task/pull/51) explains the restore logic in a ten-line call tree, so a reviewer sees all of it before reading any code:
+
+```text
+restoreSession(stored, metadata, mode)
+  none      -> ready, empty Chain
+  blocked   -> snapshot untouched, nothing saved
+                 Retry                    -> load metadata again
+                 Discard saved session... -> confirm, remove it, empty Chain
+  restored  -> Chain and layout set, notice lists the Field adjustments
+```
+
+**How I adapted it:**
+
+- **Evidence must be rerunnable.** A reviewer has to be able to run it again: a test or a flow file, never a description of what was done.
+- **Visible changes get a recording.** A companion `pr-evidence` skill writes a Playwright flow for the change (16 so far, in `frontend/e2e/flows/`). A committed script (`frontend/scripts/pr-evidence.mjs`) then records a video and screenshots the same way every time, and fails on any console error.
+- **Everything else gets test output,** plus one line saying why there's no recording, so a reviewer can disagree with that call.
+- **`Closes #N` on every slice.** Merging a PR closes its ticket, so the issue list always shows what's left.
+
 ### Trade-offs I made
 
 - **A day of planning before any code.** Prototyping ten editors and four backends took time. But it meant the implementation never changed direction, and the slices could be built in parallel because the decisions were already locked.
