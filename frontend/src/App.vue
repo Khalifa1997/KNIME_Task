@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { onKeyStroke, useActiveElement, useMediaQuery } from '@vueuse/core'
+import { useActiveElement, useEventListener, useMediaQuery } from '@vueuse/core'
 import { fetchMetadata } from './api/metadata'
 import { postRun } from './api/run'
 import type { Metadata } from './api/types'
@@ -137,12 +137,12 @@ function startRun() {
 }
 
 // Capture before Vue Flow handles node keys, including inside a Step's Fields.
-onKeyStroke('Enter', (event) => {
-  if (event.ctrlKey || event.metaKey) {
+useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
     event.preventDefault()
     startRun()
   }
-}, { target: window, capture: true })
+}, { capture: true })
 </script>
 
 <template>
