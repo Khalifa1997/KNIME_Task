@@ -1,0 +1,14 @@
+.git
+**/node_modules
+**/target
+**/dist
+**/test-results
+**/playwright-report
+.playwright-cli
+.playwright-mcp
+.pi
+prototypes
+docs
+*.log
+.env
+.env.*
