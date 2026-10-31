@@ -191,7 +191,7 @@ restoreSession(stored, metadata, mode)
 **How I adapted it:**
 
 - **Evidence must be rerunnable.** A reviewer has to be able to run it again: a test or a flow file, never a description of what was done.
-- **Visible changes get a recording.** A companion `pr-evidence` skill writes a Playwright flow for the change (16 so far, in `frontend/e2e/flows/`). A committed script (`frontend/scripts/pr-evidence.mjs`) then records a video and screenshots the same way every time, and fails on any console error.
+- **Visible changes get a recording.** A companion `pr-evidence` skill writes a Playwright flow for the change (15 so far, in `frontend/e2e/flows/`). A committed script (`frontend/scripts/pr-evidence.mjs`) then records a video and screenshots the same way every time, and fails on any console error.
 - **Everything else gets test output,** plus one line saying why there's no recording, so a reviewer can disagree with that call.
 - **`Closes #N` on every slice.** Merging a PR closes its ticket, so the issue list always shows what's left.
 
