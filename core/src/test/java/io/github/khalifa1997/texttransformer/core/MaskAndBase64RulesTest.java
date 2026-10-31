@@ -11,10 +11,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 /** The rules only Trim, Mask and the Base64 Transformations have, seen through the runner. */
 class MaskAndBase64RulesTest {
 
-    private final ChainRunner runner = new ChainRunner(TransformationRegistry.builtIn());
+    private final ChainRunner runner = new ChainRunner(TransformationRegistry.builtIn(), text -> false);
 
     private RunResult run(String input, String id, Map<String, Object> values) {
-        return runner.run(input, List.of(new StepInput(id, values)));
+        return runner.run(input, List.of(new StepInput(id, values)), false);
     }
 
     private static RunResult.Rejected rejected(String field, ErrorCode errorCode, String message) {
@@ -48,7 +48,7 @@ class MaskAndBase64RulesTest {
                 new StepInput("base64decode", Map.of()),
                 new StepInput("append", Map.of("text", "never")));
 
-        assertThat(runner.run("SGVsbG8=", steps)).isEqualTo(new RunResult.Rejected(List.of(
+        assertThat(runner.run("SGVsbG8=", steps, false)).isEqualTo(new RunResult.Rejected(List.of(
                 new StepError(1, null, ErrorCode.INVALID_BASE64, "Text isn't valid Base64."))));
     }
 
@@ -73,7 +73,7 @@ class MaskAndBase64RulesTest {
         var text = "Grüße, \uD83D\uDE00\nzweite Zeile";
         var steps = List.of(new StepInput("base64encode", Map.of()), new StepInput("base64decode", Map.of()));
 
-        assertThat(runner.run(text, steps)).isInstanceOfSatisfying(RunResult.Completed.class,
+        assertThat(runner.run(text, steps, false)).isInstanceOfSatisfying(RunResult.Completed.class,
                 completed -> assertThat(completed.output()).isEqualTo(text));
     }
 

@@ -5,6 +5,7 @@ import type { FieldValue, RunError, RunRequest, RunResponse } from './api/types'
 
 export interface Chain {
   inputText: string
+  contentCheck: boolean
   steps: { id: string; transformationId: string; values: Record<string, FieldValue> }[]
 }
 
@@ -37,6 +38,7 @@ export function createRunState(): RunState {
 export function requestOf(chain: Chain): RunRequest {
   return {
     inputText: chain.inputText,
+    contentCheck: chain.contentCheck,
     steps: chain.steps.map(({ id, transformationId, values }) => ({
       id,
       transformationId,

@@ -3,6 +3,7 @@ import { postRun, RunFailure, RunRejected } from '../api/run'
 import problem from '../../../contract/post-chain-run.two-broken-steps.422.json'
 import request from '../../../contract/post-chain-run.two-broken-steps.request.json'
 import success from '../../../contract/post-chain-run.200.json'
+import flagged from '../../../contract/post-chain-run.input-flagged.422.json'
 
 afterEach(() => vi.unstubAllGlobals())
 function respond(body: unknown, status = 422, contentType = 'application/problem+json') {
@@ -64,9 +65,21 @@ describe('Run failure classification and success guard', () => {
     respond({ output: '', steps: [{ id: '', output: '' }] }, 200)
     await expect(postRun(request)).resolves.toEqual({ output: '', steps: [{ id: '', output: '' }] })
   })
-  it.each([400, 404, 503, 201])('classifies HTTP %s as unexpected', async status => {
+  it.each([400, 404, 201])('classifies HTTP %s as unexpected', async status => {
     respond({}, status)
     await expect(postRun(request)).rejects.toMatchObject({ kind: 'unexpected' })
+  })
+  it('classifies 503 as the Content check being unreachable, without trusting its body', async () => {
+    respond('private server detail', 503)
+    await expect(postRun(request)).rejects.toMatchObject({
+      kind: 'check-unavailable',
+      message: "The Content check couldn't be reached, so nothing was run.",
+    })
+  })
+  it('keeps the flagged-Input-text fixture as an ordinary rejection', async () => {
+    respond(flagged)
+    await expect(postRun(request)).rejects.toMatchObject({ problem: flagged })
+    await expect(postRun(request)).rejects.toBeInstanceOf(RunRejected)
   })
   it('classifies 500 without trusting its body', async () => {
     respond('private server detail', 500)

@@ -11,6 +11,8 @@ export const TYPING_SAVE_DELAY_MS = 300
 export interface SessionSnapshot {
   schemaVersion: 1
   inputText: string
+  // Missing in Saved sessions from before the Content check, which restore as off.
+  contentCheck?: boolean
   steps: { id: string; transformationId: string; values: Record<string, FieldValue> }[]
   // The Fields and types the values were written under, so restore can find added, removed and changed-type Fields.
   fieldTypes: Record<string, Record<string, FieldType>>
@@ -36,6 +38,7 @@ const isViewport = (value: unknown): value is Viewport =>
 
 export function isSessionSnapshot(value: unknown): value is SessionSnapshot {
   if (!isRecord(value) || value.schemaVersion !== 1 || typeof value.inputText !== 'string') return false
+  if (value.contentCheck !== undefined && typeof value.contentCheck !== 'boolean') return false
   const { steps, fieldTypes, layout } = value
   if (!Array.isArray(steps) || !steps.every((step) =>
     isRecord(step) && typeof step.id === 'string' && typeof step.transformationId === 'string' &&
@@ -75,6 +78,7 @@ export function buildSnapshot(chain: Chain, layout: Layout, metadata: Metadata):
   return {
     schemaVersion: 1,
     inputText: chain.inputText,
+    contentCheck: chain.contentCheck,
     steps: chain.steps.map(({ id, transformationId, values }) => ({ id, transformationId, values: { ...values } })),
     fieldTypes,
     layout: {
@@ -91,6 +95,8 @@ export type RestoreResult =
   | {
     status: 'restored'
     inputText: string
+    // Off when the server can't run the Content check, so it is never asked to.
+    contentCheck: boolean
     steps: Chain['steps']
     positions: Record<string, Point>
     // Null when the layout mode changed: the canvas frames the Chain afresh.
@@ -166,6 +172,7 @@ export function restoreSession(stored: string | null, metadata: Metadata, mode: 
   return {
     status: 'restored',
     inputText: snapshot.inputText,
+    contentCheck: snapshot.contentCheck === true && metadata.contentCheck.available,
     steps,
     positions: sameMode
       ? Object.fromEntries(Object.entries(snapshot.layout.positions).filter(([id]) => liveIds.has(id)))
@@ -205,7 +212,7 @@ export function useSessionSaving({ chain, layout, metadata, phase }: SessionSavi
   watch(() => chain.steps.map((step) => step.id).join('|'), save)
   watch(layout, save, { deep: true })
   watchDebounced(
-    () => [chain.inputText, chain.steps.map((step) => step.values)],
+    () => [chain.inputText, chain.contentCheck, chain.steps.map((step) => step.values)],
     save,
     { debounce: TYPING_SAVE_DELAY_MS, deep: true },
   )

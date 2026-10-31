@@ -30,7 +30,12 @@ export interface Limits {
   maxSteps: number
 }
 
+export interface ContentCheckMeta {
+  available: boolean
+}
+
 export interface Metadata {
+  contentCheck: ContentCheckMeta
   limits: Limits
   transformations: TransformationMeta[]
 }
@@ -45,6 +50,7 @@ export interface StepRequest {
 
 export interface RunRequest {
   inputText: string
+  contentCheck?: boolean
   steps: StepRequest[]
 }
 

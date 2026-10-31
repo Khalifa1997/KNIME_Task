@@ -18,6 +18,6 @@ public final class IntegerFieldRunnerFixture {
                 return input + values.integer("start");
             }
         };
-        return new ChainRunner(new TransformationRegistry(List.of(transformation)));
+        return new ChainRunner(new TransformationRegistry(List.of(transformation)), text -> false);
     }
 }

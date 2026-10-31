@@ -37,6 +37,7 @@ const props = defineProps<{
   layout: Layout
   transformations: TransformationMeta[]
   maxInputLength: number
+  contentCheckAvailable: boolean
   run: RunState
   dimmed: boolean
   focusRequest?: FocusRequest | null
@@ -44,6 +45,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:inputText': [value: string]
+  'update:contentCheck': [value: boolean]
   'update:positions': [positions: Record<string, Point>]
   'update:viewport': [viewport: Viewport]
   'delete-step': [stepId: string]
@@ -132,6 +134,8 @@ watch(
           targetPosition: ends.value.target,
           // Vue Flow never applies `ariaRole`, so the role goes in through domAttributes.
           domAttributes: { role: 'group', 'aria-labelledby': titleIdOf(id) },
+          // The Content check badge's tooltip reaches over the next node, so the Input text sits on top.
+          zIndex: id === INPUT_ID ? 1 : 0,
           data: {},
         }) as Node,
     )
@@ -349,12 +353,15 @@ watch(() => props.focusRequest, (request) => {
       <InputNode
         :focus-request="focusById[INPUT_ID] ?? null"
         :text="chain.inputText"
+        :content-check="chain.contentCheck"
+        :content-check-available="contentCheckAvailable"
         :errors="inputErrors"
         :suppress-errors="run.status === 'failed'"
         :dimmed="dimmed"
         :max-input-length="maxInputLength"
         :source-position="ends.source"
         @update:text="emit('update:inputText', $event)"
+        @update:content-check="emit('update:contentCheck', $event)"
       />
     </template>
 

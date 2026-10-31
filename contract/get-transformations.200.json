@@ -1,4 +1,5 @@
 {
+  "contentCheck": { "available": false },
   "limits": { "maxInputLength": 3000, "maxSteps": 30 },
   "transformations": [
     {

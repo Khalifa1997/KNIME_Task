@@ -39,6 +39,7 @@ async function loadMetadata() {
     }
     if (restored.status === 'restored') {
       chain.inputText = restored.inputText
+      chain.contentCheck = restored.contentCheck
       chain.steps = restored.steps
       layout.positions = restored.positions
       layout.viewport = restored.viewport
@@ -65,6 +66,7 @@ function discardSession() {
   hasSavedSession.value = false
   restoreBlockedReason.value = ''
   chain.inputText = ''
+  chain.contentCheck = false
   chain.steps = []
   layout.positions = {}
   layout.viewport = null
@@ -72,7 +74,7 @@ function discardSession() {
   focusNode(INPUT_ID, true)
 }
 
-const chain = reactive<Chain>({ inputText: '', steps: [] })
+const chain = reactive<Chain>({ inputText: '', contentCheck: false, steps: [] })
 const isPhone = useMediaQuery(PHONE_QUERY)
 const layout = reactive<Layout>({
   mode: isPhone.value ? 'phone' : 'desktop',
@@ -98,6 +100,18 @@ watch(isPhone, (phone) => {
   layout.positions = {}
   layout.viewport = null
 })
+
+const contentCheckAvailable = computed(() => readyMetadata.value?.contentCheck.available === true)
+
+// A server that can't run the Content check must never be asked to.
+watch(contentCheckAvailable, (available) => {
+  if (!available) chain.contentCheck = false
+})
+
+function setContentCheck(on: boolean) {
+  chain.contentCheck = on
+  announce(on ? 'Content check on.' : 'Content check off.')
+}
 
 const canAddStep = computed(
   () => readyMetadata.value !== null && chain.steps.length < readyMetadata.value.limits.maxSteps,
@@ -363,12 +377,14 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
         :layout="layout"
         :transformations="readyMetadata.transformations"
         :max-input-length="readyMetadata.limits.maxInputLength"
+        :content-check-available="contentCheckAvailable"
         :run="run"
         :dimmed="status.dimmed"
         @delete-step="deleteStep"
         @move-step="moveStep"
         @swap-steps="swapSteps"
         @update:input-text="chain.inputText = $event"
+        @update:content-check="setContentCheck"
         @update-field="(stepId, name, value) => {
           const step = chain.steps.find((candidate) => candidate.id === stepId)
           if (step) step.values[name] = value

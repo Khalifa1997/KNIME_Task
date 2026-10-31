@@ -40,8 +40,8 @@ class ChainValidationTest {
     }
 
     private static RunResult run(Probe probe, Map<String, Object> values) {
-        return new ChainRunner(new TransformationRegistry(List.of(probe)))
-                .run("", List.of(new StepInput("probe", values)));
+        return new ChainRunner(new TransformationRegistry(List.of(probe)), text -> false)
+                .run("", List.of(new StepInput("probe", values)), false);
     }
 
     private static void rejects(Probe probe, Map<String, Object> values, String field, ErrorCode code, String message) {
@@ -167,7 +167,7 @@ class ChainValidationTest {
         for (int i = 3; i < 31; i++) {
             steps.add(new StepInput("probe", Map.of("text", "valid", "start", 0)));
         }
-        var result = new ChainRunner(new TransformationRegistry(List.of(probe))).run("a".repeat(3_001), steps);
+        var result = new ChainRunner(new TransformationRegistry(List.of(probe)), text -> false).run("a".repeat(3_001), steps, false);
         assertThat(result).isEqualTo(new RunResult.Rejected(List.of(
                 new InputError(ErrorCode.INPUT_TOO_LONG, "Input text is longer than 3,000 characters."),
                 new InputError(ErrorCode.TOO_MANY_STEPS, "A Chain can have at most 30 Steps."),
@@ -197,8 +197,8 @@ class ChainValidationTest {
     @Test
     void inputOnlyRejectionStillChecksValidStepsButNeverApplies() {
         var probe = new Probe();
-        var runner = new ChainRunner(new TransformationRegistry(List.of(probe)));
-        assertThat(runner.run("😀".repeat(1_500) + "a", List.of(new StepInput("probe", Map.of()))))
+        var runner = new ChainRunner(new TransformationRegistry(List.of(probe)), text -> false);
+        assertThat(runner.run("😀".repeat(1_500) + "a", List.of(new StepInput("probe", Map.of())), false))
                 .isEqualTo(new RunResult.Rejected(List.of(new InputError(ErrorCode.INPUT_TOO_LONG,
                         "Input text is longer than 3,000 characters."))));
         assertThat(probe.checks).isEqualTo(1);
@@ -210,8 +210,8 @@ class ChainValidationTest {
         var registry = TransformationRegistry.builtIn();
         assertThat(registry.find("uppercase").orElseThrow().check(FieldValues.of(List.of(), Map.of()))).isEmpty();
         var text = "😀".repeat(1_500);
-        assertThat(new ChainRunner(registry).run(text,
-                Collections.nCopies(30, new StepInput("uppercase", Map.of()))))
+        assertThat(new ChainRunner(registry, unused -> false).run(text,
+                Collections.nCopies(30, new StepInput("uppercase", Map.of())), false))
                 .isEqualTo(new RunResult.Completed(text, Collections.nCopies(30, text)));
     }
 
@@ -221,11 +221,11 @@ class ChainValidationTest {
         var registry = TransformationRegistry.builtIn();
         var all = new ArrayList<>(registry.all());
         all.add(probe);
-        var runner = new ChainRunner(new TransformationRegistry(all));
+        var runner = new ChainRunner(new TransformationRegistry(all), text -> false);
         assertThat(runner.run("a", List.of(
                 new StepInput("append", Map.of("text", "a".repeat(2_999))),
                 new StepInput("append", Map.of("text", "b")),
-                new StepInput("probe", Map.of()))))
+                new StepInput("probe", Map.of())), false))
                 .isEqualTo(new RunResult.Rejected(List.of(new StepError(1, null, ErrorCode.RESULT_TOO_LONG,
                         "Result is longer than 3,000 characters."))));
         assertThat(probe.checks).isEqualTo(1);
@@ -234,11 +234,11 @@ class ChainValidationTest {
 
     @Test
     void resultLengthUsesUtf16AndIncludesExpansionByAFieldlessTransformation() {
-        var runner = new ChainRunner(TransformationRegistry.builtIn());
-        assertThat(runner.run("😀".repeat(1_500), List.of(new StepInput("append", Map.of("text", "a")))))
+        var runner = new ChainRunner(TransformationRegistry.builtIn(), text -> false);
+        assertThat(runner.run("😀".repeat(1_500), List.of(new StepInput("append", Map.of("text", "a"))), false))
                 .isEqualTo(new RunResult.Rejected(List.of(new StepError(0, null, ErrorCode.RESULT_TOO_LONG,
                         "Result is longer than 3,000 characters."))));
-        assertThat(runner.run("ß".repeat(1_501), List.of(new StepInput("uppercase", Map.of()))))
+        assertThat(runner.run("ß".repeat(1_501), List.of(new StepInput("uppercase", Map.of())), false))
                 .isEqualTo(new RunResult.Rejected(List.of(new StepError(0, null, ErrorCode.RESULT_TOO_LONG,
                         "Result is longer than 3,000 characters."))));
     }
@@ -256,6 +256,6 @@ class ChainValidationTest {
         outputs.clear();
         assertThat(completed.stepOutputs()).containsExactly("ok");
         assertThatThrownBy(() -> completed.stepOutputs().clear()).isInstanceOf(UnsupportedOperationException.class);
-        assertThat(ErrorCode.values()).hasSize(15);
+        assertThat(ErrorCode.values()).hasSize(16);
     }
 }

@@ -6,3 +6,6 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/transformations
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false

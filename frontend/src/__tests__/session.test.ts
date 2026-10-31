@@ -6,6 +6,7 @@ import type { Chain } from '../run'
 import { SESSION_KEY, buildSnapshot, isSessionSnapshot, restoreSession, useSessionSaving, type SessionSnapshot } from '../session'
 
 const metadata: Metadata = {
+  contentCheck: { available: true },
   limits: { maxInputLength: 1000, maxSteps: 5 },
   transformations: [
     { id: 'uppercase', label: 'Uppercase', description: '', fields: [] },
@@ -63,6 +64,7 @@ describe('restoreSession', () => {
     expect(restoreSession(stored(validSnapshot), metadata, 'desktop')).toEqual({
       status: 'restored',
       inputText: 'hello',
+      contentCheck: false,
       steps: [{ id: 'a', transformationId: 'replace', values: { search: 'l', times: 2 } }],
       positions: { a: { x: 10, y: 20 } },
       viewport: { x: 1, y: 2, zoom: 0.5 },
@@ -199,7 +201,7 @@ describe('saving the session', () => {
   })
 
   function setup() {
-    const chain = reactive<Chain>({ inputText: '', steps: [] })
+    const chain = reactive<Chain>({ inputText: '', contentCheck: false, steps: [] })
     const layout = reactive<Layout>({ mode: 'desktop', positions: {}, viewport: null })
     const phase = ref('loading')
     const metadataRef = ref<typeof metadata | null>(metadata)
@@ -311,9 +313,28 @@ describe('saving the session', () => {
   })
 })
 
+describe('Content check in the Saved session', () => {
+  it('saves and restores the switch when available, but disables it without a key', () => {
+    const chain: Chain = { inputText: 'hello', contentCheck: true, steps: [] }
+    const layout: Layout = { mode: 'desktop', positions: {}, viewport: null }
+    const snapshot = buildSnapshot(chain, layout, metadata)
+    expect(snapshot.contentCheck).toBe(true)
+    expect(restoreSession(JSON.stringify(snapshot), metadata, 'desktop'))
+      .toMatchObject({ status: 'restored', contentCheck: true })
+    expect(restoreSession(JSON.stringify(snapshot), { ...metadata, contentCheck: { available: false } }, 'desktop'))
+      .toMatchObject({ status: 'restored', contentCheck: false })
+  })
+
+  it('defaults older Saved sessions to off and rejects a malformed switch', () => {
+    expect(restoreSession(JSON.stringify(validSnapshot), metadata, 'desktop'))
+      .toMatchObject({ status: 'restored', contentCheck: false })
+    expect(isSessionSnapshot({ ...validSnapshot, contentCheck: 'true' })).toBe(false)
+  })
+})
+
 describe('buildSnapshot', () => {
   it('writes a snapshot that passes the guard', () => {
-    const chain: Chain = { inputText: 'x', steps: [{ id: 'a', transformationId: 'uppercase', values: {} }] }
+    const chain: Chain = { inputText: 'x', contentCheck: false, steps: [{ id: 'a', transformationId: 'uppercase', values: {} }] }
     const layout: Layout = { mode: 'phone', positions: {}, viewport: null }
     expect(isSessionSnapshot(buildSnapshot(chain, layout, metadata))).toBe(true)
   })
