@@ -17,6 +17,11 @@ test('shows one Add Step button per Transformation, described by its description
     'Regex replace',
     'Uppercase',
     'Lowercase',
+    'Reverse',
+    'Trim whitespace',
+    'Mask',
+    'Base64 encode',
+    'Base64 decode',
   ])
   await expect(palette.getByRole('button', { name: 'Uppercase' })).toHaveAccessibleDescription(
     'Converts the text to upper case.',
